@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -10,6 +10,8 @@ import {
   Cloud,
   Download,
   Droplets,
+  Eye,
+  EyeOff,
   FileArchive,
   FileImage,
   FileInput,
@@ -26,6 +28,7 @@ import {
   Link2,
   Loader2,
   Lock,
+  LogOut,
   Mail,
   Menu,
   Moon,
@@ -103,7 +106,49 @@ function formatSize(bytes) {
   return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
 }
 
+// ─── Auth Context ──────────────────────────────────────────────────────────────
+const AuthContext = createContext(null);
+
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Restore session on mount by validating the httpOnly JWT cookie
+  useEffect(() => {
+    fetch('http://localhost:5180/api/auth/me', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data?.user) setUser(data.user); })
+      .catch(() => {})
+      .finally(() => setAuthLoading(false));
+  }, []);
+
+  const login = useCallback((userData) => setUser(userData), []);
+
+  const logout = useCallback(async () => {
+    try {
+      await fetch('http://localhost:5180/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {}
+    setUser(null);
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, authLoading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+function useAuth() {
+  return useContext(AuthContext);
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 function App() {
+  const { user, login, logout } = useAuth();
+  const [authModal, setAuthModal] = useState(false);
   const [dark, setDark] = useState(false);
   const [page, setPage] = useState('home');
   const [files, setFiles] = useState([]);
@@ -259,7 +304,14 @@ function App() {
     <main className={classNames(dark ? 'dark' : '', 'min-h-screen bg-slate-50 text-slate-950 antialiased dark:bg-slate-950 dark:text-white')}>
       <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,#dbeafe,transparent_34%),linear-gradient(180deg,#ffffff_0%,#eff6ff_45%,#ffffff_100%)] transition-colors duration-500 dark:bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.32),transparent_34%),linear-gradient(180deg,#020617_0%,#0f172a_52%,#020617_100%)]">
         <div className="pointer-events-none absolute inset-0 bg-grid opacity-50 dark:opacity-20" />
-        <FloatingNav dark={dark} onToggleDark={() => setDark((value) => !value)} onHome={goHome} />
+        <FloatingNav
+          dark={dark}
+          onToggleDark={() => setDark((value) => !value)}
+          onHome={goHome}
+          user={user}
+          onOpenAuth={() => setAuthModal(true)}
+          onLogout={logout}
+        />
         {page === 'tool' ? (
           <ToolPage
             activeTool={activeTool}
@@ -302,6 +354,12 @@ function App() {
           </>
         )}
       </div>
+      {/* Auth modal — rendered outside the scroll container */}
+      <AuthModal
+        open={authModal}
+        onClose={() => setAuthModal(false)}
+        onSuccess={(u) => { login(u); setAuthModal(false); }}
+      />
     </main>
   );
 }
@@ -429,7 +487,7 @@ function ToolPage({
   );
 }
 
-function FloatingNav({ dark, onToggleDark, onHome }) {
+function FloatingNav({ dark, onToggleDark, onHome, user, onOpenAuth, onLogout }) {
   const [open, setOpen] = useState(false);
   const links = ['Tools', 'Workflow', 'Pricing', 'Security'];
 
@@ -453,9 +511,14 @@ function FloatingNav({ dark, onToggleDark, onHome }) {
           <button type="button" aria-label="Toggle dark mode" onClick={onToggleDark} className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-white/10 dark:text-white">
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <button type="button" className="hidden rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-700 dark:bg-white dark:text-slate-950 md:inline-flex">
-            Sign in
-          </button>
+          {/* Auth button — avatar when logged in, Sign In when logged out */}
+          {user ? (
+            <UserAvatar user={user} onLogout={onLogout} />
+          ) : (
+            <button type="button" onClick={onOpenAuth} className="hidden rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-700 dark:bg-white dark:text-slate-950 md:inline-flex">
+              Sign in
+            </button>
+          )}
           <button type="button" aria-label="Open menu" onClick={() => setOpen((value) => !value)} className="grid h-10 w-10 place-items-center rounded-full bg-blue-600 text-white md:hidden">
             <Menu size={18} />
           </button>
@@ -465,10 +528,20 @@ function FloatingNav({ dark, onToggleDark, onHome }) {
         {open && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mx-auto mt-3 max-w-7xl rounded-3xl border border-white/70 bg-white/95 p-3 shadow-premium backdrop-blur dark:border-white/10 dark:bg-slate-900/95 md:hidden">
             {links.map((link) => (
-              <a key={link} href={`#${link.toLowerCase()}`} className="block rounded-2xl px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">
+              <a key={link} href={`#${link.toLowerCase()}`} onClick={() => setOpen(false)} className="block rounded-2xl px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">
                 {link}
               </a>
             ))}
+            {/* Mobile auth action */}
+            {user ? (
+              <button type="button" onClick={() => { setOpen(false); onLogout(); }} className="mt-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 font-bold text-red-600 dark:text-red-400">
+                <LogOut size={15} /> Sign out
+              </button>
+            ) : (
+              <button type="button" onClick={() => { setOpen(false); onOpenAuth(); }} className="mt-1 w-full rounded-2xl bg-blue-600 px-4 py-3 font-bold text-white">
+                Sign in
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -905,4 +978,373 @@ function SectionTitle({ eyebrow, title, subtitle, align = 'center' }) {
   );
 }
 
-createRoot(document.getElementById('root')).render(<App />);
+// ─── inputClass helper ────────────────────────────────────────────────────────
+function inputClass(hasError) {
+  return classNames(
+    'w-full rounded-xl border bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500',
+    hasError
+      ? 'border-red-400 focus:ring-red-400'
+      : 'border-slate-200 focus:border-blue-400 focus:ring-blue-400 dark:border-white/10'
+  );
+}
+
+// ─── Field — labeled input wrapper ───────────────────────────────────────────
+function Field({ label, error, children }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-bold text-slate-700 dark:text-slate-300">{label}</label>
+      {children}
+      <AnimatePresence>
+        {error && (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mt-1.5 text-xs font-semibold text-red-600 dark:text-red-400"
+          >
+            {error}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── UserAvatar — initials circle + dropdown ─────────────────────────────────
+function UserAvatar({ user, onLogout }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const initials = user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handler(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 text-sm font-bold text-slate-800 shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/10 dark:text-white"
+      >
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-blue-600 text-xs font-black text-white">{initials}</span>
+        <span className="hidden sm:inline">{user.name.split(' ')[0]}</span>
+        <ChevronRight size={14} className={classNames('transition-transform duration-200', open && 'rotate-90')} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-white/80 bg-white p-2 shadow-premium dark:border-white/10 dark:bg-slate-900"
+          >
+            <div className="mb-1 border-b border-slate-100 px-3 py-2 dark:border-white/10">
+              <p className="truncate text-sm font-black text-slate-900 dark:text-white">{user.name}</p>
+              <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); onLogout(); }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-red-50 hover:text-red-600 dark:text-slate-300 dark:hover:bg-red-400/10 dark:hover:text-red-400"
+            >
+              <LogOut size={15} /> Sign out
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── AuthModal — Sign In / Sign Up ────────────────────────────────────────────
+function AuthModal({ open, onClose, onSuccess }) {
+  const [tab, setTab] = useState('login');
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [errors, setErrors] = useState({});
+  const [globalError, setGlobalError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [showCpw, setShowCpw] = useState(false);
+
+  // Reset form state when modal opens or tab changes
+  useEffect(() => {
+    setForm({ name: '', email: '', password: '', confirmPassword: '' });
+    setErrors({});
+    setGlobalError('');
+    setLoading(false);
+    setShowPw(false);
+    setShowCpw(false);
+  }, [open, tab]);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
+  function setField(field) {
+    return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+  }
+
+  // Password strength: 0-4
+  function getStrength(pw) {
+    if (!pw) return 0;
+    let s = 0;
+    if (pw.length >= 8) s++;
+    if (pw.length >= 12) s++;
+    if (/\d/.test(pw)) s++;
+    if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(pw)) s++;
+    return s;
+  }
+  const strength = getStrength(form.password);
+  const strengthLabel = ['', 'Weak', 'Fair', 'Strong', 'Very Strong'][strength];
+  const strengthColor = ['', 'bg-red-500', 'bg-orange-400', 'bg-yellow-400', 'bg-green-500'][strength];
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setErrors({});
+    setGlobalError('');
+    setLoading(true);
+    const isSignup = tab === 'signup';
+    const endpoint = isSignup ? '/api/auth/signup' : '/api/auth/login';
+    const body = isSignup
+      ? { name: form.name, email: form.email, password: form.password, confirmPassword: form.confirmPassword }
+      : { email: form.email, password: form.password };
+    try {
+      const res = await fetch(`http://localhost:5180${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.errors) setErrors(data.errors);
+        setGlobalError(data.error || 'Something went wrong. Please try again.');
+        return;
+      }
+      onSuccess(data.user);
+    } catch {
+      setGlobalError('Cannot reach the server. Make sure the API is running (npm run api).');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
+
+          {/* Modal card */}
+          <motion.div
+            initial={{ opacity: 0, y: 28, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 28, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+            className="relative w-full max-w-md rounded-[2rem] border border-white/80 bg-white/95 p-8 shadow-premium backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute right-5 top-5 grid h-9 w-9 place-items-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
+            >
+              <X size={16} />
+            </button>
+
+            {/* Logo */}
+            <div className="mb-7 flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-blue-600 text-white shadow-glow">
+                <Sparkles size={20} />
+              </span>
+              <span className="text-lg font-black tracking-tight text-slate-950 dark:text-white">PDFFlow</span>
+            </div>
+
+            {/* Tab switcher */}
+            <div className="mb-7 flex rounded-2xl border border-slate-200 bg-slate-50 p-1 dark:border-white/10 dark:bg-white/5">
+              {['login', 'signup'].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTab(t)}
+                  className={classNames(
+                    'flex-1 rounded-xl py-2.5 text-sm font-black transition',
+                    tab === t
+                      ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-800 dark:text-white'
+                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                  )}
+                >
+                  {t === 'login' ? 'Sign In' : 'Sign Up'}
+                </button>
+              ))}
+            </div>
+
+            <h2 className="text-2xl font-black text-slate-950 dark:text-white">
+              {tab === 'login' ? 'Welcome back' : 'Create your account'}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              {tab === 'login'
+                ? 'Enter your credentials to access your account.'
+                : 'Join PDFFlow and start converting documents for free.'}
+            </p>
+
+            {/* Global error banner */}
+            <AnimatePresence>
+              {globalError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:bg-red-400/10 dark:text-red-300"
+                >
+                  {globalError}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
+              {/* Full Name — signup only */}
+              {tab === 'signup' && (
+                <Field label="Full Name" error={errors.name}>
+                  <input
+                    type="text"
+                    placeholder="Jane Smith"
+                    value={form.name}
+                    onChange={setField('name')}
+                    autoComplete="name"
+                    className={inputClass(errors.name)}
+                  />
+                </Field>
+              )}
+
+              {/* Email */}
+              <Field label="Email" error={errors.email}>
+                <input
+                  type="email"
+                  placeholder="you@company.com"
+                  value={form.email}
+                  onChange={setField('email')}
+                  autoComplete="email"
+                  className={inputClass(errors.email)}
+                />
+              </Field>
+
+              {/* Password */}
+              <Field label="Password" error={errors.password}>
+                <div className="relative">
+                  <input
+                    type={showPw ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={setField('password')}
+                    autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
+                    className={classNames(inputClass(errors.password), 'pr-11')}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
+                  >
+                    {showPw ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </div>
+                {/* Strength meter — visible on signup */}
+                {tab === 'signup' && form.password && (
+                  <div className="mt-2">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div
+                          key={i}
+                          className={classNames(
+                            'h-1 flex-1 rounded-full transition-colors duration-300',
+                            strength >= i ? strengthColor : 'bg-slate-200 dark:bg-white/10'
+                          )}
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">{strengthLabel}</p>
+                  </div>
+                )}
+              </Field>
+
+              {/* Confirm password — signup only */}
+              {tab === 'signup' && (
+                <Field label="Confirm Password" error={errors.confirmPassword}>
+                  <div className="relative">
+                    <input
+                      type={showCpw ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={form.confirmPassword}
+                      onChange={setField('confirmPassword')}
+                      autoComplete="new-password"
+                      className={classNames(inputClass(errors.confirmPassword), 'pr-11')}
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowCpw((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
+                    >
+                      {showCpw ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
+                </Field>
+              )}
+
+              {/* Submit button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-2 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Loader2 className="animate-spin" size={18} /> Please wait…
+                  </span>
+                ) : tab === 'login' ? 'Sign In' : 'Create Account'}
+              </button>
+            </form>
+
+            {/* Tab switch link */}
+            <p className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
+              {tab === 'login' ? "Don't have an account? " : 'Already have an account? '}
+              <button
+                type="button"
+                onClick={() => setTab(tab === 'login' ? 'signup' : 'login')}
+                className="font-bold text-blue-600 hover:underline dark:text-blue-400"
+              >
+                {tab === 'login' ? 'Sign up free' : 'Sign in'}
+              </button>
+            </p>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Wrap App in AuthProvider so useAuth() works everywhere
+createRoot(document.getElementById('root')).render(
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+);
