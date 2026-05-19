@@ -47,6 +47,16 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024, files: 25 },
 });
 
+const dbReady = initDb();
+app.use(async (_req, _res, next) => {
+  try {
+    await dbReady;
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 function sanitizeUser(user) {
   const { password: _p, ...safe } = user;
@@ -880,13 +890,20 @@ app.use((error, _req, res, _next) => {
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-const port = process.env.PORT || 5180;
-initDb().then(() => {
+export default app;
+
+const cliPath = process.argv[1] ? new URL(`file:///${process.argv[1].replace(/\\/g, '/')}`).href : '';
+const isCliRun = import.meta.url === cliPath;
+
+if (isCliRun) {
+  const port = process.env.PORT || 5180;
+  dbReady.then(() => {
   app.listen(port, () => {
     console.log(`✅ PDFFlow API running at http://localhost:${port}`);
     console.log(`   All 18 tools are now LIVE`);
   });
-}).catch((err) => {
-  console.error('Failed to initialise database:', err);
-  process.exit(1);
-});
+  }).catch((err) => {
+    console.error('Failed to initialise database:', err);
+    process.exit(1);
+  });
+}

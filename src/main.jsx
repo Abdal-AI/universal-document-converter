@@ -31,20 +31,38 @@ import {
   LogOut,
   Mail,
   Menu,
-  Moon,
+  Monitor,
   Play,
   RotateCw,
   Scissors,
   ShieldCheck,
   Sparkles,
   Star,
-  Sun,
   UploadCloud,
   WandSparkles,
   X,
   Zap,
 } from 'lucide-react';
 import './styles.css';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5180' : '');
+const apiUrl = (path) => `${API_BASE}${path}`;
+
+function DropboxIcon({ size = 24, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12.003 3.693l-5.69 3.633 4.316 3.42 5.688-3.634-4.314-3.419zm-5.69 10.92l5.69 3.633 4.315-3.418-5.689-3.635-4.316 3.42zm11.38-7.287l4.314 3.419-5.688 3.634-4.315-3.42 5.689-3.633zm-5.69 10.92l-4.315-3.418-5.69 3.634 5.69 3.633 4.315-3.419-5.69-3.63z" />
+    </svg>
+  );
+}
+
+function GoogleDriveIcon({ size = 24, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M14.288 3.6L7.155 16.035h14.275L14.288 3.6zM2.541 21.6h7.135L16.81 9.418 9.675 3.6 2.541 21.6zm8.85 0h10.052l3.568-6.182H14.96l-3.569 6.182z"/>
+    </svg>
+  );
+}
 
 const tools = [
   { id: 'pdf-to-word',       name: 'PDF to Word',       icon: FileText,       description: 'Extract PDF text into an editable DOCX file.',       accept: '.pdf,application/pdf',                     live: true },
@@ -116,7 +134,7 @@ function AuthProvider({ children }) {
 
   // Restore session on mount by validating the httpOnly JWT cookie
   useEffect(() => {
-    fetch('http://localhost:5180/api/auth/me', { credentials: 'include' })
+    fetch(apiUrl('/api/auth/me'), { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => { if (data?.user) setUser(data.user); })
       .catch(() => {})
@@ -127,7 +145,7 @@ function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch('http://localhost:5180/api/auth/logout', {
+      await fetch(apiUrl('/api/auth/logout'), {
         method: 'POST',
         credentials: 'include',
       });
@@ -150,7 +168,6 @@ function useAuth() {
 function App() {
   const { user, login, logout } = useAuth();
   const [authModal, setAuthModal] = useState(false);
-  const [dark, setDark] = useState(false);
   const [page, setPage] = useState('home');
   const [files, setFiles] = useState([]);
   const [selectedToolId, setSelectedToolId] = useState('pdf-to-word');
@@ -158,10 +175,101 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
+  const [isDownloadingFromCloud, setIsDownloadingFromCloud] = useState(false);
   const inputRef = useRef(null);
 
   const activeTool = useMemo(() => tools.find((tool) => tool.id === selectedToolId) || tools[0], [selectedToolId]);
   const totalSize = useMemo(() => files.reduce((sum, item) => sum + item.file.size, 0), [files]);
+
+  function openDropbox() {
+    const appKey = import.meta.env.VITE_DROPBOX_APP_KEY;
+    if (!appKey) {
+      setError("Dropbox App Key is missing. Please add VITE_DROPBOX_APP_KEY to .env");
+      return;
+    }
+    if (window.Dropbox) {
+      window.Dropbox.appKey = appKey;
+      window.Dropbox.choose({
+        success: async function(files) {
+          setIsDownloadingFromCloud(true);
+          try {
+             const downloadedFiles = await Promise.all(files.map(async (file) => {
+               const res = await fetch(file.link);
+               const blob = await res.blob();
+               return new File([blob], file.name, { type: blob.type || 'application/octet-stream' });
+             }));
+             addFiles(downloadedFiles);
+          } catch(err) {
+             setError("Failed to download from Dropbox.");
+          } finally {
+             setIsDownloadingFromCloud(false);
+          }
+        },
+        linkType: "direct",
+        multiselect: true,
+      });
+    } else {
+      setError("Dropbox API failed to load.");
+    }
+  }
+
+  function openGoogleDrive() {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+    const appId = import.meta.env.VITE_GOOGLE_APP_ID;
+    
+    if (!clientId || !apiKey || !appId) {
+      setError("Google Drive API keys are missing. Please add them to .env");
+      return;
+    }
+
+    if (!window.google || !window.gapi) {
+      setError("Google APIs are still loading.");
+      return;
+    }
+
+    const tokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'https://www.googleapis.com/auth/drive.readonly',
+      callback: (tokenResponse) => {
+        if (tokenResponse && tokenResponse.access_token) {
+          window.gapi.load('picker', () => {
+             const view = new window.google.picker.DocsView();
+             view.setIncludeFolders(true);
+             const picker = new window.google.picker.PickerBuilder()
+                .enableFeature(window.google.picker.Feature.NAV_HIDDEN)
+                .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
+                .setDeveloperKey(apiKey)
+                .setAppId(appId)
+                .setOAuthToken(tokenResponse.access_token)
+                .addView(view)
+                .setCallback(async (data) => {
+                   if (data.action === window.google.picker.Action.PICKED) {
+                      setIsDownloadingFromCloud(true);
+                      try {
+                         const downloadedFiles = await Promise.all(data.docs.map(async (doc) => {
+                            const res = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
+                               headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                            });
+                            const blob = await res.blob();
+                            return new File([blob], doc.name, { type: doc.mimeType });
+                         }));
+                         addFiles(downloadedFiles);
+                      } catch(err) {
+                         setError("Failed to download from Google Drive.");
+                      } finally {
+                         setIsDownloadingFromCloud(false);
+                      }
+                   }
+                })
+                .build();
+             picker.setVisible(true);
+          });
+        }
+      }
+    });
+    tokenClient.requestAccessToken();
+  }
 
   useEffect(() => {
     function syncHash() {
@@ -249,7 +357,7 @@ function App() {
     try {
       const body = new FormData();
       files.forEach((item) => body.append('files', item.file));
-      const response = await fetch(`http://localhost:5180/api/convert/${activeTool.id}`, {
+      const response = await fetch(apiUrl(`/api/convert/${activeTool.id}`), {
         method: 'POST',
         body,
       });
@@ -302,12 +410,9 @@ function App() {
   }
 
   return (
-    <main className={classNames(dark ? 'dark' : '', 'min-h-screen bg-slate-50 text-slate-950 antialiased dark:bg-slate-950 dark:text-white')}>
-      <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,#dbeafe,transparent_34%),linear-gradient(180deg,#ffffff_0%,#eff6ff_45%,#ffffff_100%)] transition-colors duration-500 dark:bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.32),transparent_34%),linear-gradient(180deg,#020617_0%,#0f172a_52%,#020617_100%)]">
-        <div className="pointer-events-none absolute inset-0 bg-grid opacity-50 dark:opacity-20" />
+    <main className='min-h-screen bg-white text-slate-950 antialiased'>
+      <div className="relative min-h-screen overflow-hidden bg-white transition-colors duration-500">
         <FloatingNav
-          dark={dark}
-          onToggleDark={() => setDark((value) => !value)}
           onHome={goHome}
           user={user}
           onOpenAuth={() => setAuthModal(true)}
@@ -329,6 +434,9 @@ function App() {
             removeFile={removeFile}
             downloadFile={downloadFile}
             onBack={goHome}
+            openGoogleDrive={openGoogleDrive}
+            openDropbox={openDropbox}
+            isDownloadingFromCloud={isDownloadingFromCloud}
           />
         ) : (
           <>
@@ -343,6 +451,9 @@ function App() {
               isProcessing={isProcessing}
               progress={progress}
               error={error}
+              openGoogleDrive={openGoogleDrive}
+              openDropbox={openDropbox}
+              isDownloadingFromCloud={isDownloadingFromCloud}
             />
             <ToolsGrid activeTool={activeTool} onSelectTool={chooseTool} />
             <Features />
@@ -388,7 +499,7 @@ function ToolPage({
       <button
         type="button"
         onClick={onBack}
-        className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-sm font-black text-slate-700 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:text-blue-700 dark:border-white/10 dark:bg-white/10 dark:text-slate-200"
+        className="mb-8 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-sm font-black text-slate-700 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:text-red-700"
       >
         <ChevronRight className="rotate-180" size={16} />
         Back to all tools
@@ -396,14 +507,14 @@ function ToolPage({
 
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
         <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="lg:sticky lg:top-28">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-2 text-sm font-black text-blue-700 shadow-lg shadow-blue-600/10 backdrop-blur dark:border-blue-400/20 dark:bg-white/10 dark:text-blue-200">
+          <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white/80 px-4 py-2 text-sm font-black text-red-700 shadow-lg shadow-red-600/10 backdrop-blur">
             <Icon size={16} />
             {activeTool.live ? 'Working converter' : 'Converter engine required'}
           </div>
-          <h1 className="mt-6 text-5xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-6xl">
+          <h1 className="mt-6 text-5xl font-black leading-tight tracking-tight text-slate-950 sm:text-6xl">
             {activeTool.name}
           </h1>
-          <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+          <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">
             {activeTool.description} Add files here, run the converter, then download the finished output from your queue.
           </p>
 
@@ -419,12 +530,10 @@ function ToolPage({
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
-          className="rounded-[2rem] border border-white/80 bg-white/82 p-5 shadow-premium backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/72 sm:p-8"
+          className="rounded-[2rem] border border-slate-200/80 bg-white/95 p-5 shadow-premium backdrop-blur-2xl sm:p-8"
         >
           <input ref={inputRef} type="file" accept={activeTool.accept} multiple className="hidden" onChange={(event) => addFiles(event.target.files)} />
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
+          <div
             onDragOver={(event) => {
               event.preventDefault();
               setIsDragging(true);
@@ -436,45 +545,65 @@ function ToolPage({
               addFiles(event.dataTransfer.files);
             }}
             className={classNames(
-              'group grid min-h-[24rem] w-full place-items-center rounded-[1.6rem] border-2 border-dashed border-blue-200 bg-blue-50/70 p-8 text-center transition hover:-translate-y-1 hover:border-blue-500 hover:bg-blue-50 dark:border-blue-400/30 dark:bg-blue-950/30 dark:hover:border-blue-300',
-              isDragging && 'scale-[1.01] border-blue-500 shadow-glow'
+              'grid min-h-[24rem] w-full place-items-center rounded-[1.6rem] border-2 border-dashed border-red-200 bg-red-50/70 p-8 text-center transition',
+              isDragging && 'scale-[1.01] border-red-500 shadow-glow'
             )}
           >
-            <span className="grid h-24 w-24 place-items-center rounded-[2rem] bg-blue-600 text-white shadow-glow transition group-hover:scale-105">
-              <UploadCloud size={40} />
-            </span>
-            <span className="mt-7 block text-3xl font-black text-slate-950 dark:text-white">Drop files here</span>
-            <span className="mt-2 block max-w-md text-sm font-semibold leading-6 text-slate-500 dark:text-slate-300">
-              Upload files for {activeTool.name}. You can drag files into this box or select them from your computer.
-            </span>
-            <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-blue-700 shadow-sm dark:bg-white/10 dark:text-blue-200">
-              Select files <ChevronRight size={16} />
-            </span>
-          </button>
+            <div className="flex flex-col items-center w-full max-w-sm">
+              <span className="grid h-20 w-20 place-items-center rounded-3xl bg-red-600 text-white shadow-glow mb-6">
+                <UploadCloud size={34} />
+              </span>
+              <span className="block text-2xl font-black text-slate-950">Drop files here</span>
+              <span className="mt-2 block text-sm font-semibold leading-6 text-slate-500 mb-6">
+                Upload files for {activeTool.name}.
+              </span>
+              
+              {isDownloadingFromCloud ? (
+                 <div className="flex flex-col items-center gap-3 py-6 text-red-600">
+                    <Loader2 className="animate-spin" size={32} />
+                    <span className="font-bold text-sm">Downloading from cloud...</span>
+                 </div>
+              ) : (
+                 <div className="flex flex-col w-full gap-3">
+                    <button type="button" onClick={() => inputRef.current?.click()} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-red-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-red-700">
+                       <Monitor size={20} /> Upload from Computer
+                    </button>
+                    <div className="grid grid-cols-2 gap-3 w-full">
+                       <button type="button" onClick={openGoogleDrive} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-red-300 hover:text-red-600">
+                          <GoogleDriveIcon size={18} /> Google Drive
+                       </button>
+                       <button type="button" onClick={openDropbox} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-red-300 hover:text-red-600">
+                          <DropboxIcon size={18} /> Dropbox
+                       </button>
+                    </div>
+                 </div>
+              )}
+            </div>
+          </div>
 
           <AnimatePresence>
             {error && (
-              <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:bg-red-400/10 dark:text-red-200">
+              <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                 {error}
               </motion.p>
             )}
           </AnimatePresence>
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-            <button type="button" onClick={processFiles} disabled={!files.length || isProcessing} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="button" onClick={processFiles} disabled={!files.length || isProcessing} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
               {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
               Convert {activeTool.name}
             </button>
-            <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 font-black text-slate-800 shadow-lg transition hover:-translate-y-1 hover:border-blue-300 dark:border-white/10 dark:bg-white/10 dark:text-white">
+            <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 font-black text-slate-800 shadow-lg transition hover:-translate-y-1 hover:border-red-300">
               <UploadCloud size={20} />
               Add more files
             </button>
           </div>
 
           {(isProcessing || progress > 0) && (
-            <div className="mt-5 rounded-2xl bg-slate-100 p-2 dark:bg-white/10">
-              <div className="h-3 overflow-hidden rounded-full bg-white dark:bg-slate-900">
-                <motion.div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-400" animate={{ width: `${progress}%` }} />
+            <div className="mt-5 rounded-2xl bg-slate-100 p-2">
+              <div className="h-3 overflow-hidden rounded-full bg-white">
+                <motion.div className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400" animate={{ width: `${progress}%` }} />
               </div>
             </div>
           )}
@@ -488,58 +617,55 @@ function ToolPage({
   );
 }
 
-function FloatingNav({ dark, onToggleDark, onHome, user, onOpenAuth, onLogout }) {
+function FloatingNav({ onHome, user, onOpenAuth, onLogout }) {
   const [open, setOpen] = useState(false);
   const links = ['Tools', 'Workflow', 'Pricing', 'Security'];
 
   return (
     <header className="fixed left-0 right-0 top-4 z-50 px-4">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-white/70 bg-white/78 px-4 py-3 shadow-xl shadow-blue-900/5 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/72">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-slate-200/80 bg-white/95 px-4 py-3 shadow-xl shadow-red-900/5 backdrop-blur-2xl">
         <button type="button" onClick={onHome} className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-blue-600 text-white shadow-glow">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-red-600 text-white shadow-glow">
             <Sparkles size={20} />
           </span>
-          <span className="text-lg font-black tracking-tight text-slate-950 dark:text-white">PDFFlow</span>
+          <span className="text-lg font-black tracking-tight text-slate-950">PDFFlow</span>
         </button>
         <div className="hidden items-center gap-1 md:flex">
           {links.map((link) => (
-            <a key={link} href={`#${link.toLowerCase()}`} className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white">
+            <a key={link} href={`#${link.toLowerCase()}`} className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-red-50 hover:text-red-700">
               {link}
             </a>
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" aria-label="Toggle dark mode" onClick={onToggleDark} className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-white/10 dark:text-white">
-            {dark ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-          {/* Auth button — avatar when logged in, Sign In when logged out */}
+          {/* Auth button - avatar when logged in, Sign In when logged out */}
           {user ? (
             <UserAvatar user={user} onLogout={onLogout} />
           ) : (
-            <button type="button" onClick={onOpenAuth} className="hidden rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-700 dark:bg-white dark:text-slate-950 md:inline-flex">
+            <button type="button" onClick={onOpenAuth} className="hidden rounded-full bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-600/20 transition hover:-translate-y-0.5 hover:bg-red-700 md:inline-flex">
               Sign in
             </button>
           )}
-          <button type="button" aria-label="Open menu" onClick={() => setOpen((value) => !value)} className="grid h-10 w-10 place-items-center rounded-full bg-blue-600 text-white md:hidden">
+          <button type="button" aria-label="Open menu" onClick={() => setOpen((value) => !value)} className="grid h-10 w-10 place-items-center rounded-full bg-red-600 text-white md:hidden">
             <Menu size={18} />
           </button>
         </div>
       </nav>
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mx-auto mt-3 max-w-7xl rounded-3xl border border-white/70 bg-white/95 p-3 shadow-premium backdrop-blur dark:border-white/10 dark:bg-slate-900/95 md:hidden">
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mx-auto mt-3 max-w-7xl rounded-3xl border border-slate-200/80 bg-white/95 p-3 shadow-premium backdrop-blur md:hidden">
             {links.map((link) => (
-              <a key={link} href={`#${link.toLowerCase()}`} onClick={() => setOpen(false)} className="block rounded-2xl px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">
+              <a key={link} href={`#${link.toLowerCase()}`} onClick={() => setOpen(false)} className="block rounded-2xl px-4 py-3 font-semibold text-slate-700">
                 {link}
               </a>
             ))}
             {/* Mobile auth action */}
             {user ? (
-              <button type="button" onClick={() => { setOpen(false); onLogout(); }} className="mt-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 font-bold text-red-600 dark:text-red-400">
+              <button type="button" onClick={() => { setOpen(false); onLogout(); }} className="mt-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 font-bold text-red-600">
                 <LogOut size={15} /> Sign out
               </button>
             ) : (
-              <button type="button" onClick={() => { setOpen(false); onOpenAuth(); }} className="mt-1 w-full rounded-2xl bg-blue-600 px-4 py-3 font-bold text-white">
+              <button type="button" onClick={() => { setOpen(false); onOpenAuth(); }} className="mt-1 w-full rounded-2xl bg-red-600 px-4 py-3 font-bold text-white">
                 Sign in
               </button>
             )}
@@ -550,18 +676,18 @@ function FloatingNav({ dark, onToggleDark, onHome, user, onOpenAuth, onLogout })
   );
 }
 
-function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFiles, activeTool, isProcessing, progress, error }) {
+function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFiles, activeTool, isProcessing, progress, error, openGoogleDrive, openDropbox, isDownloadingFromCloud }) {
   return (
     <section id="upload" className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 pb-20 pt-32 sm:px-6 lg:px-8">
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="mx-auto max-w-4xl text-center">
-        <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-2 text-sm font-bold text-blue-700 shadow-lg shadow-blue-600/10 backdrop-blur dark:border-blue-400/20 dark:bg-white/10 dark:text-blue-200">
+        <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-red-200 bg-white/80 px-4 py-2 text-sm font-bold text-red-700 shadow-lg shadow-red-600/10 backdrop-blur">
           <WandSparkles size={16} />
           {activeTool.live ? 'Live local converter' : 'API-ready converter'}
         </div>
-        <h1 className="text-balance text-5xl font-black leading-[1.02] tracking-tight text-slate-950 dark:text-white sm:text-6xl lg:text-7xl">
+        <h1 className="text-balance text-5xl font-black leading-[1.02] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
           Every PDF Tool You Need in One Place
         </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+        <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600">
           Choose a tool, upload the matching files, and download real converted output from the local API where supported.
         </p>
       </motion.div>
@@ -584,32 +710,49 @@ function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFil
             addFiles(event.dataTransfer.files);
           }}
           className={classNames(
-            'relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/82 p-5 shadow-premium backdrop-blur-2xl transition duration-300 dark:border-white/10 dark:bg-slate-900/72 sm:p-8',
-            isDragging && 'scale-[1.01] border-blue-400 shadow-glow'
+            'relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 p-5 shadow-premium backdrop-blur-2xl transition duration-300 sm:p-8',
+            isDragging && 'scale-[1.01] border-red-400 shadow-glow'
           )}
         >
           <input ref={inputRef} type="file" accept={activeTool.accept} multiple className="hidden" onChange={(event) => addFiles(event.target.files)} />
           <div className="relative grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className="group grid min-h-72 place-items-center rounded-[1.5rem] border-2 border-dashed border-blue-200 bg-blue-50/70 p-8 text-center transition hover:-translate-y-1 hover:border-blue-500 hover:bg-blue-50 dark:border-blue-400/30 dark:bg-blue-950/30 dark:hover:border-blue-300"
-            >
-              <span className="grid h-20 w-20 place-items-center rounded-3xl bg-blue-600 text-white shadow-glow transition group-hover:scale-105">
-                <UploadCloud size={34} />
-              </span>
-              <span className="mt-6 block text-2xl font-black text-slate-950 dark:text-white">Drop files for {activeTool.name}</span>
-              <span className="mt-2 block text-sm font-semibold text-slate-500 dark:text-slate-300">or click to browse from your device</span>
-              <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-blue-700 shadow-sm dark:bg-white/10 dark:text-blue-200">
-                Select files <ChevronRight size={16} />
-              </span>
-            </button>
+            
+            <div className="grid min-h-72 place-items-center rounded-[1.5rem] border-2 border-dashed border-red-200 bg-red-50/70 p-6 text-center transition">
+              <div className="flex flex-col items-center w-full max-w-sm">
+                <span className="grid h-16 w-16 place-items-center rounded-[1.5rem] bg-red-600 text-white shadow-glow mb-5">
+                  <UploadCloud size={28} />
+                </span>
+                <span className="block text-xl font-black text-slate-950">Drop files for {activeTool.name}</span>
+                <span className="mt-2 block text-sm font-semibold text-slate-500 mb-6">or click a method below to browse</span>
+                
+                {isDownloadingFromCloud ? (
+                   <div className="flex flex-col items-center gap-2 py-4 text-red-600">
+                      <Loader2 className="animate-spin" size={28} />
+                      <span className="font-bold text-sm">Downloading from cloud...</span>
+                   </div>
+                ) : (
+                   <div className="flex flex-col w-full gap-2">
+                      <button type="button" onClick={() => inputRef.current?.click()} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-red-600 px-5 py-3 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-red-700">
+                         <Monitor size={18} /> Upload from Computer
+                      </button>
+                      <div className="grid grid-cols-2 gap-2 w-full">
+                         <button type="button" onClick={openGoogleDrive} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-red-300 hover:text-red-600">
+                            <GoogleDriveIcon size={16} /> Google Drive
+                         </button>
+                         <button type="button" onClick={openDropbox} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-red-300 hover:text-red-600">
+                            <DropboxIcon size={16} /> Dropbox
+                         </button>
+                      </div>
+                   </div>
+                )}
+              </div>
+            </div>
 
             <div className="space-y-4">
-              <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-lg dark:border-white/10 dark:bg-white/10">
+              <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-lg">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-300">Upload status</p>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200">
+                  <p className="text-sm font-bold text-slate-500">Upload status</p>
+                  <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-700">
                     Secure
                   </span>
                 </div>
@@ -622,25 +765,25 @@ function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFil
               </div>
               <AnimatePresence>
                 {error && (
-                  <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:bg-red-400/10 dark:text-red-200">
+                  <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                     {error}
                   </motion.p>
                 )}
               </AnimatePresence>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <button type="button" onClick={processFiles} disabled={!files.length || isProcessing} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="button" onClick={processFiles} disabled={!files.length || isProcessing} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
                   {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
                   Run {activeTool.name}
                 </button>
-                <button type="button" className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 font-black text-slate-800 shadow-lg transition hover:-translate-y-1 hover:border-blue-300 dark:border-white/10 dark:bg-white/10 dark:text-white">
-                  <Cloud size={20} />
-                  Import cloud
+                <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 font-black text-slate-800 shadow-lg transition hover:-translate-y-1 hover:border-red-300">
+                  <UploadCloud size={20} />
+                  Add files
                 </button>
               </div>
               {(isProcessing || progress > 0) && (
-                <div className="rounded-2xl bg-slate-100 p-2 dark:bg-white/10">
-                  <div className="h-3 overflow-hidden rounded-full bg-white dark:bg-slate-900">
-                    <motion.div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-400" animate={{ width: `${progress}%` }} />
+                <div className="rounded-2xl bg-slate-100 p-2">
+                  <div className="h-3 overflow-hidden rounded-full bg-white">
+                    <motion.div className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400" animate={{ width: `${progress}%` }} />
                   </div>
                 </div>
               )}
@@ -655,9 +798,9 @@ function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFil
           ['99.9%', 'uptime'],
           ['256-bit', 'encrypted flow'],
         ].map(([value, label]) => (
-          <div key={label} className="rounded-3xl border border-white/70 bg-white/60 p-5 shadow-lg backdrop-blur dark:border-white/10 dark:bg-white/5">
-            <p className="text-2xl font-black text-blue-600 dark:text-blue-300 sm:text-3xl">{value}</p>
-            <p className="mt-1 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
+          <div key={label} className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-lg backdrop-blur">
+            <p className="text-2xl font-black text-red-600 sm:text-3xl">{value}</p>
+            <p className="mt-1 text-xs font-bold uppercase tracking-wider text-slate-500">{label}</p>
           </div>
         ))}
       </div>
@@ -667,9 +810,9 @@ function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFil
 
 function StatusRow({ label, value }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-950/60">
-      <span className="text-sm font-semibold text-slate-500 dark:text-slate-300">{label}</span>
-      <span className="text-sm font-black text-slate-900 dark:text-white">{value}</span>
+    <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
+      <span className="text-sm font-semibold text-slate-500">{label}</span>
+      <span className="text-sm font-black text-slate-900">{value}</span>
     </div>
   );
 }
@@ -693,17 +836,17 @@ function ToolsGrid({ activeTool, onSelectTool }) {
             viewport={{ once: true, amount: 0.2 }}
             transition={{ delay: Math.min(index * 0.025, 0.25) }}
             className={classNames(
-              'group rounded-3xl border p-5 text-left shadow-lg shadow-blue-950/5 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-premium',
+              'group rounded-3xl border p-5 text-left shadow-lg shadow-red-950/5 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-premium',
               selected
-                ? 'border-blue-300 bg-blue-600 text-white'
-                : 'border-white/80 bg-white/82 dark:border-white/10 dark:bg-white/5'
+                ? 'border-red-300 bg-red-600 text-white'
+                : 'border-slate-200/80 bg-white/95'
             )}
           >
             <span className={classNames(
               'grid h-12 w-12 place-items-center rounded-2xl transition group-hover:scale-110',
               selected
-                ? 'bg-white text-blue-600'
-                : 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-400/10 dark:text-blue-200'
+                ? 'bg-white text-red-600'
+                : 'bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white'
             )}>
               <Icon size={22} />
             </span>
@@ -711,12 +854,12 @@ function ToolsGrid({ activeTool, onSelectTool }) {
               <h3 className="text-base font-black">{tool.name}</h3>
               <span className={classNames(
                 'rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide',
-                selected ? 'bg-white/20 text-white' : tool.live ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200' : 'bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300'
+                selected ? 'bg-white/20 text-white' : tool.live ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-500'
               )}>
                 {tool.live ? 'Live' : 'Engine'}
               </span>
             </div>
-            <p className={classNames('mt-2 text-sm leading-6', selected ? 'text-blue-50' : 'text-slate-500 dark:text-slate-400')}>{tool.description}</p>
+            <p className={classNames('mt-2 text-sm leading-6', selected ? 'text-red-50' : 'text-slate-500')}>{tool.description}</p>
           </motion.button>
           );
         })}
@@ -734,8 +877,8 @@ function Features() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {features.map(([label, Icon]) => (
-            <div key={label} className="flex items-center gap-4 rounded-3xl border border-white/80 bg-white/78 p-5 shadow-lg backdrop-blur dark:border-white/10 dark:bg-white/5">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-50 text-cyan-700 dark:bg-cyan-400/10 dark:text-cyan-200">
+            <div key={label} className="flex items-center gap-4 rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-lg backdrop-blur">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-red-50 text-red-700">
                 <Icon size={22} />
               </span>
               <span className="font-black">{label}</span>
@@ -757,13 +900,13 @@ function Workflow() {
           ['Process', Sparkles, 'Choose a PDF tool and watch real-time progress with clean status states.'],
           ['Download', Download, 'Download converted files instantly or keep working in the dashboard.'],
         ].map(([title, Icon, copy], index) => (
-          <div key={title} className="relative rounded-[2rem] border border-white/80 bg-white/80 p-7 shadow-premium backdrop-blur dark:border-white/10 dark:bg-white/5">
-            <span className="absolute right-6 top-6 text-5xl font-black text-blue-100 dark:text-white/10">0{index + 1}</span>
-            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-600 text-white shadow-glow">
+          <div key={title} className="relative rounded-[2rem] border border-slate-200/80 bg-white/80 p-7 shadow-premium backdrop-blur">
+            <span className="absolute right-6 top-6 text-5xl font-black text-red-100">0{index + 1}</span>
+            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-red-600 text-white shadow-glow">
               <Icon size={24} />
             </span>
             <h3 className="mt-8 text-2xl font-black">{title}</h3>
-            <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">{copy}</p>
+            <p className="mt-3 leading-7 text-slate-600">{copy}</p>
           </div>
         ))}
       </div>
@@ -774,10 +917,10 @@ function Workflow() {
 function Dashboard({ files, totalSize, removeFile, downloadFile, compact = false }) {
   return (
     <section className={compact ? '' : 'px-4 py-20 sm:px-6 lg:px-8'}>
-      <div className={classNames('mx-auto rounded-[2rem] border border-white/80 bg-slate-950 p-4 text-white shadow-premium dark:border-white/10 dark:bg-white/8 sm:p-6', compact ? 'max-w-none lg:p-6' : 'max-w-7xl lg:p-8')}>
+      <div className={classNames('mx-auto rounded-[2rem] border border-slate-200/80 bg-white p-4 text-slate-950 shadow-premium sm:p-6', compact ? 'max-w-none lg:p-6' : 'max-w-7xl lg:p-8')}>
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-300">Uploaded files dashboard</p>
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-red-600">Uploaded files dashboard</p>
             <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Your conversion queue</h2>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -786,26 +929,26 @@ function Dashboard({ files, totalSize, removeFile, downloadFile, compact = false
             <MiniMetric label="Mode" value="Secure" />
           </div>
         </div>
-        <div className="mt-8 overflow-hidden rounded-3xl border border-white/10 bg-white/5">
+        <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-red-950/5">
           {files.length ? (
-            <div className="divide-y divide-white/10">
+            <div className="divide-y divide-slate-100">
               {files.map((item) => (
                 <div key={item.id} className="grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
                   <div className="flex min-w-0 items-center gap-4">
-                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/20 text-blue-200">
+                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-red-50 text-red-600">
                       <FileText size={22} />
                     </span>
                     <div className="min-w-0">
                       <p className="truncate font-black">{item.file.name}</p>
-                      <p className="mt-1 text-sm text-slate-300">{formatSize(item.file.size)} - {item.status}</p>
+                      <p className="mt-1 text-sm text-slate-500">{formatSize(item.file.size)} - {item.status}</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => downloadFile(item)} disabled={item.status !== 'Converted'} className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45">
+                    <button type="button" onClick={() => downloadFile(item)} disabled={item.status !== 'Converted'} className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-red-600/20 transition hover:-translate-y-0.5 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-45">
                       <Download size={16} />
                       Download
                     </button>
-                    <button type="button" aria-label="Remove file" onClick={() => removeFile(item.id)} className="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 text-white transition hover:bg-white/10">
+                    <button type="button" aria-label="Remove file" onClick={() => removeFile(item.id)} className="grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 text-slate-500 transition hover:bg-red-50 hover:text-red-600">
                       <X size={16} />
                     </button>
                   </div>
@@ -815,11 +958,11 @@ function Dashboard({ files, totalSize, removeFile, downloadFile, compact = false
           ) : (
             <div className="grid min-h-56 place-items-center p-8 text-center">
               <div>
-                <span className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-white/10 text-blue-200">
+                <span className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-red-50 text-red-600">
                   <Files size={28} />
                 </span>
                 <h3 className="mt-5 text-xl font-black">No files uploaded yet</h3>
-                <p className="mt-2 max-w-md text-slate-300">Add PDFs in the hero uploader to preview files, process them, and download the converted output.</p>
+                <p className="mt-2 max-w-md text-slate-500">Add PDFs in the hero uploader to preview files, process them, and download the converted output.</p>
               </div>
             </div>
           )}
@@ -831,8 +974,8 @@ function Dashboard({ files, totalSize, removeFile, downloadFile, compact = false
 
 function MiniMetric({ label, value }) {
   return (
-    <div className="rounded-2xl bg-white/10 px-4 py-3">
-      <p className="text-xs font-bold uppercase tracking-wider text-slate-300">{label}</p>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</p>
       <p className="mt-1 text-lg font-black">{value}</p>
     </div>
   );
@@ -841,24 +984,24 @@ function MiniMetric({ label, value }) {
 function AiSummarizer() {
   return (
     <section className="px-4 py-20 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] border border-blue-100 bg-gradient-to-br from-white to-blue-50 p-6 shadow-premium dark:border-white/10 dark:from-white/10 dark:to-blue-500/10 lg:grid-cols-[1fr_0.9fr] lg:p-10">
+      <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] border border-red-100 bg-gradient-to-br from-white to-red-50 p-6 shadow-premium lg:grid-cols-[1fr_0.9fr] lg:p-10">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-glow">
+          <div className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-black text-white shadow-glow">
             <BrainCircuit size={16} />
             AI PDF summarizer
           </div>
           <h2 className="mt-6 text-3xl font-black tracking-tight sm:text-5xl">Understand long PDFs before you convert them</h2>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
             Generate summaries, extract action items, identify tables, and prepare OCR recommendations from uploaded documents.
           </p>
-          <button type="button" className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-4 font-black text-white shadow-lg transition hover:-translate-y-1 dark:bg-white dark:text-slate-950">
+          <button type="button" className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-red-600 px-6 py-4 font-black text-white shadow-lg shadow-red-600/20 transition hover:-translate-y-1 hover:bg-red-700">
             Try AI summary <ArrowRight size={18} />
           </button>
         </div>
-        <div className="rounded-3xl border border-white/80 bg-white p-5 shadow-lg dark:border-white/10 dark:bg-slate-950/40">
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-lg">
           {['Executive summary', 'Key dates and numbers', 'Detected tables', 'Recommended compression'].map((item, index) => (
-            <div key={item} className="mb-3 flex items-center gap-3 rounded-2xl bg-slate-50 p-4 last:mb-0 dark:bg-white/10">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-blue-100 text-sm font-black text-blue-700 dark:bg-blue-400/15 dark:text-blue-200">{index + 1}</span>
+            <div key={item} className="mb-3 flex items-center gap-3 rounded-2xl bg-slate-50 p-4 last:mb-0">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-red-100 text-sm font-black text-red-700">{index + 1}</span>
               <span className="font-bold">{item}</span>
             </div>
           ))}
@@ -874,14 +1017,14 @@ function Testimonials() {
       <SectionTitle eyebrow="Loved by professionals" title="Reviews from teams who live in PDFs" subtitle="Clean tools, fast processing, and a workflow that feels calm even during deadline work." />
       <div className="mx-auto mt-12 grid max-w-6xl gap-5 md:grid-cols-3">
         {testimonials.map((item) => (
-          <div key={item.name} className="rounded-[2rem] border border-white/80 bg-white/80 p-7 shadow-lg backdrop-blur dark:border-white/10 dark:bg-white/5">
-            <div className="mb-5 flex gap-1 text-amber-400">
+          <div key={item.name} className="rounded-[2rem] border border-slate-200/80 bg-white/80 p-7 shadow-lg backdrop-blur">
+            <div className="mb-5 flex gap-1 text-red-500">
               {Array.from({ length: 5 }).map((_, index) => <Star key={index} size={18} fill="currentColor" />)}
             </div>
-            <p className="leading-7 text-slate-600 dark:text-slate-300">"{item.quote}"</p>
+            <p className="leading-7 text-slate-600">"{item.quote}"</p>
             <div className="mt-6">
               <p className="font-black">{item.name}</p>
-              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{item.role}</p>
+              <p className="text-sm font-semibold text-slate-500">{item.role}</p>
             </div>
           </div>
         ))}
@@ -904,7 +1047,7 @@ function Pricing() {
 
 function Plan({ name, price, features: planFeatures, featured }) {
   return (
-    <div className={classNames('rounded-[2rem] border p-7 shadow-premium', featured ? 'border-blue-500 bg-blue-600 text-white' : 'border-white/80 bg-white/82 dark:border-white/10 dark:bg-white/5')}>
+    <div className={classNames('rounded-[2rem] border p-7 shadow-premium', featured ? 'border-red-500 bg-red-600 text-white' : 'border-slate-200/80 bg-white/95')}>
       <div className="flex items-center justify-between gap-4">
         <h3 className="text-2xl font-black">{name}</h3>
         {featured && <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black">Best value</span>}
@@ -913,14 +1056,14 @@ function Plan({ name, price, features: planFeatures, featured }) {
       <div className="mt-7 space-y-3">
         {planFeatures.map((feature) => (
           <div key={feature} className="flex items-center gap-3">
-            <span className={classNames('grid h-6 w-6 place-items-center rounded-full', featured ? 'bg-white text-blue-700' : 'bg-blue-100 text-blue-700 dark:bg-blue-400/15 dark:text-blue-200')}>
+            <span className={classNames('grid h-6 w-6 place-items-center rounded-full', featured ? 'bg-white text-red-700' : 'bg-red-100 text-red-700')}>
               <Check size={14} />
             </span>
             <span className="font-semibold">{feature}</span>
           </div>
         ))}
       </div>
-      <button type="button" className={classNames('mt-8 w-full rounded-2xl px-5 py-4 font-black transition hover:-translate-y-1', featured ? 'bg-white text-blue-700' : 'bg-slate-950 text-white dark:bg-white dark:text-slate-950')}>
+      <button type="button" className={classNames('mt-8 w-full rounded-2xl px-5 py-4 font-black transition hover:-translate-y-1', featured ? 'bg-white text-red-700' : 'bg-red-600 text-white hover:bg-red-700')}>
         Get started
       </button>
     </div>
@@ -930,18 +1073,18 @@ function Plan({ name, price, features: planFeatures, featured }) {
 function Footer() {
   return (
     <footer className="px-4 pb-8 pt-16 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-10 rounded-[2rem] border border-white/80 bg-white/80 p-8 shadow-lg backdrop-blur dark:border-white/10 dark:bg-white/5 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-7xl gap-10 rounded-[2rem] border border-slate-200/80 bg-white/80 p-8 shadow-lg backdrop-blur md:grid-cols-[1.2fr_1fr_1fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-blue-600 text-white">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-red-600 text-white">
               <Sparkles size={20} />
             </span>
             <span className="text-lg font-black">PDFFlow</span>
           </div>
-          <p className="mt-4 max-w-sm leading-7 text-slate-600 dark:text-slate-300">A premium all-in-one PDF converter experience with secure upload flows and modern conversion tools.</p>
+          <p className="mt-4 max-w-sm leading-7 text-slate-600">A premium all-in-one PDF converter experience with secure upload flows and modern conversion tools.</p>
           <div className="mt-5 flex gap-2">
             {[Globe2, Link2, Mail].map((Icon, index) => (
-              <a key={index} href="#" aria-label="Social link" className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:-translate-y-0.5 hover:text-blue-700 dark:border-white/10 dark:bg-white/10 dark:text-white">
+              <a key={index} href="#" aria-label="Social link" className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:-translate-y-0.5 hover:text-red-700">
                 <Icon size={17} />
               </a>
             ))}
@@ -956,7 +1099,7 @@ function Footer() {
             <h3 className="font-black">{title}</h3>
             <div className="mt-4 space-y-3">
               {links.map((link) => (
-                <a key={link} href="#" className="block text-sm font-semibold text-slate-500 transition hover:text-blue-700 dark:text-slate-400 dark:hover:text-white">
+                <a key={link} href="#" className="block text-sm font-semibold text-slate-500 transition hover:text-red-700">
                   {link}
                 </a>
               ))}
@@ -964,7 +1107,7 @@ function Footer() {
           </div>
         ))}
       </div>
-      <p className="mx-auto mt-6 max-w-7xl text-center text-sm font-semibold text-slate-500 dark:text-slate-400">Copyright 2026 PDFFlow. Built for fast, secure document workflows.</p>
+      <p className="mx-auto mt-6 max-w-7xl text-center text-sm font-semibold text-slate-500">Copyright 2026 PDFFlow. Built for fast, secure document workflows.</p>
     </footer>
   );
 }
@@ -972,9 +1115,9 @@ function Footer() {
 function SectionTitle({ eyebrow, title, subtitle, align = 'center' }) {
   return (
     <div className={classNames('mx-auto max-w-3xl', align === 'center' ? 'text-center' : 'text-left')}>
-      <p className="text-sm font-black uppercase tracking-[0.22em] text-blue-600 dark:text-blue-300">{eyebrow}</p>
-      <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">{title}</h2>
-      <p className="mt-5 text-lg leading-8 text-slate-600 dark:text-slate-300">{subtitle}</p>
+      <p className="text-sm font-black uppercase tracking-[0.22em] text-red-600">{eyebrow}</p>
+      <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">{title}</h2>
+      <p className="mt-5 text-lg leading-8 text-slate-600">{subtitle}</p>
     </div>
   );
 }
@@ -982,10 +1125,10 @@ function SectionTitle({ eyebrow, title, subtitle, align = 'center' }) {
 // ─── inputClass helper ────────────────────────────────────────────────────────
 function inputClass(hasError) {
   return classNames(
-    'w-full rounded-xl border bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500',
+    'w-full rounded-xl border bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2',
     hasError
       ? 'border-red-400 focus:ring-red-400'
-      : 'border-slate-200 focus:border-blue-400 focus:ring-blue-400 dark:border-white/10'
+      : 'border-slate-200 focus:border-red-400 focus:ring-red-400'
   );
 }
 
@@ -993,7 +1136,7 @@ function inputClass(hasError) {
 function Field({ label, error, children }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-bold text-slate-700 dark:text-slate-300">{label}</label>
+      <label className="mb-1.5 block text-sm font-bold text-slate-700">{label}</label>
       {children}
       <AnimatePresence>
         {error && (
@@ -1001,7 +1144,7 @@ function Field({ label, error, children }) {
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="mt-1.5 text-xs font-semibold text-red-600 dark:text-red-400"
+            className="mt-1.5 text-xs font-semibold text-red-600"
           >
             {error}
           </motion.p>
@@ -1029,9 +1172,9 @@ function UserAvatar({ user, onLogout }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 text-sm font-bold text-slate-800 shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/10 dark:text-white"
+        className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 text-sm font-bold text-slate-800 shadow-sm transition hover:-translate-y-0.5"
       >
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-blue-600 text-xs font-black text-white">{initials}</span>
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-red-600 text-xs font-black text-white">{initials}</span>
         <span className="hidden sm:inline">{user.name.split(' ')[0]}</span>
         <ChevronRight size={14} className={classNames('transition-transform duration-200', open && 'rotate-90')} />
       </button>
@@ -1043,16 +1186,16 @@ function UserAvatar({ user, onLogout }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-white/80 bg-white p-2 shadow-premium dark:border-white/10 dark:bg-slate-900"
+            className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-200/80 bg-white p-2 shadow-premium"
           >
-            <div className="mb-1 border-b border-slate-100 px-3 py-2 dark:border-white/10">
-              <p className="truncate text-sm font-black text-slate-900 dark:text-white">{user.name}</p>
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
+            <div className="mb-1 border-b border-slate-100 px-3 py-2">
+              <p className="truncate text-sm font-black text-slate-900">{user.name}</p>
+              <p className="truncate text-xs text-slate-500">{user.email}</p>
             </div>
             <button
               type="button"
               onClick={() => { setOpen(false); onLogout(); }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-red-50 hover:text-red-600 dark:text-slate-300 dark:hover:bg-red-400/10 dark:hover:text-red-400"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-red-50 hover:text-red-600"
             >
               <LogOut size={15} /> Sign out
             </button>
@@ -1107,7 +1250,7 @@ function AuthModal({ open, onClose, onSuccess }) {
   }
   const strength = getStrength(form.password);
   const strengthLabel = ['', 'Weak', 'Fair', 'Strong', 'Very Strong'][strength];
-  const strengthColor = ['', 'bg-red-500', 'bg-orange-400', 'bg-yellow-400', 'bg-green-500'][strength];
+  const strengthColor = ['', 'bg-red-500', 'bg-red-500', 'bg-red-600', 'bg-red-700'][strength];
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -1120,7 +1263,7 @@ function AuthModal({ open, onClose, onSuccess }) {
       ? { name: form.name, email: form.email, password: form.password, confirmPassword: form.confirmPassword }
       : { email: form.email, password: form.password };
     try {
-      const res = await fetch(`http://localhost:5180${endpoint}`, {
+      const res = await fetch(apiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -1151,7 +1294,7 @@ function AuthModal({ open, onClose, onSuccess }) {
           onClick={onClose}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-red-950/20 backdrop-blur-sm" />
 
           {/* Modal card */}
           <motion.div
@@ -1159,28 +1302,28 @@ function AuthModal({ open, onClose, onSuccess }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 28, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="relative w-full max-w-md rounded-[2rem] border border-white/80 bg-white/95 p-8 shadow-premium backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/95"
+            className="relative w-full max-w-md rounded-[2rem] border border-slate-200/80 bg-white/95 p-8 shadow-premium backdrop-blur-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close */}
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-5 top-5 grid h-9 w-9 place-items-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
+              className="absolute right-5 top-5 grid h-9 w-9 place-items-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-100"
             >
               <X size={16} />
             </button>
 
             {/* Logo */}
             <div className="mb-7 flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-blue-600 text-white shadow-glow">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-red-600 text-white shadow-glow">
                 <Sparkles size={20} />
               </span>
-              <span className="text-lg font-black tracking-tight text-slate-950 dark:text-white">PDFFlow</span>
+              <span className="text-lg font-black tracking-tight text-slate-950">PDFFlow</span>
             </div>
 
             {/* Tab switcher */}
-            <div className="mb-7 flex rounded-2xl border border-slate-200 bg-slate-50 p-1 dark:border-white/10 dark:bg-white/5">
+            <div className="mb-7 flex rounded-2xl border border-slate-200 bg-slate-50 p-1">
               {['login', 'signup'].map((t) => (
                 <button
                   key={t}
@@ -1189,8 +1332,8 @@ function AuthModal({ open, onClose, onSuccess }) {
                   className={classNames(
                     'flex-1 rounded-xl py-2.5 text-sm font-black transition',
                     tab === t
-                      ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-800 dark:text-white'
-                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                      ? 'bg-white text-slate-950 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
                   )}
                 >
                   {t === 'login' ? 'Sign In' : 'Sign Up'}
@@ -1198,10 +1341,10 @@ function AuthModal({ open, onClose, onSuccess }) {
               ))}
             </div>
 
-            <h2 className="text-2xl font-black text-slate-950 dark:text-white">
+            <h2 className="text-2xl font-black text-slate-950">
               {tab === 'login' ? 'Welcome back' : 'Create your account'}
             </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-sm text-slate-500">
               {tab === 'login'
                 ? 'Enter your credentials to access your account.'
                 : 'Join PDFFlow and start converting documents for free.'}
@@ -1214,7 +1357,7 @@ function AuthModal({ open, onClose, onSuccess }) {
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:bg-red-400/10 dark:text-red-300"
+                  className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
                 >
                   {globalError}
                 </motion.div>
@@ -1263,7 +1406,7 @@ function AuthModal({ open, onClose, onSuccess }) {
                     type="button"
                     tabIndex={-1}
                     onClick={() => setShowPw((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
                   >
                     {showPw ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
@@ -1277,7 +1420,7 @@ function AuthModal({ open, onClose, onSuccess }) {
                           key={i}
                           className={classNames(
                             'h-1 flex-1 rounded-full transition-colors duration-300',
-                            strength >= i ? strengthColor : 'bg-slate-200 dark:bg-white/10'
+                            strength >= i ? strengthColor : 'bg-slate-200'
                           )}
                         />
                       ))}
@@ -1303,7 +1446,7 @@ function AuthModal({ open, onClose, onSuccess }) {
                       type="button"
                       tabIndex={-1}
                       onClick={() => setShowCpw((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
                     >
                       {showCpw ? <EyeOff size={17} /> : <Eye size={17} />}
                     </button>
@@ -1315,7 +1458,7 @@ function AuthModal({ open, onClose, onSuccess }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-2 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-2 w-full rounded-2xl bg-red-600 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? (
                   <span className="inline-flex items-center justify-center gap-2">
@@ -1326,12 +1469,12 @@ function AuthModal({ open, onClose, onSuccess }) {
             </form>
 
             {/* Tab switch link */}
-            <p className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-5 text-center text-sm text-slate-500">
               {tab === 'login' ? "Don't have an account? " : 'Already have an account? '}
               <button
                 type="button"
                 onClick={() => setTab(tab === 'login' ? 'signup' : 'login')}
-                className="font-bold text-blue-600 hover:underline dark:text-blue-400"
+                className="font-bold text-red-600 hover:underline"
               >
                 {tab === 'login' ? 'Sign up free' : 'Sign in'}
               </button>

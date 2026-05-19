@@ -12,12 +12,13 @@ import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
 import { mkdirSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Ensure the data directory exists
-const dataDir = join(__dirname, 'data');
+const dataDir = process.env.VERCEL ? join(tmpdir(), 'pdfflow-data') : join(__dirname, 'data');
 mkdirSync(dataDir, { recursive: true });
 
 const dbFile = join(dataDir, 'users.json');
