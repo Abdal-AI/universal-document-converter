@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter, Routes, Route, useNavigate, Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -168,9 +169,10 @@ function useAuth() {
 function App() {
   const { user, login, logout } = useAuth();
   const [authModal, setAuthModal] = useState(false);
-  const [page, setPage] = useState('home');
   const [files, setFiles] = useState([]);
-  const [selectedToolId, setSelectedToolId] = useState('pdf-to-word');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const matchToolId = location.pathname.split('/')[1] || 'pdf-to-word';
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -178,7 +180,7 @@ function App() {
   const [isDownloadingFromCloud, setIsDownloadingFromCloud] = useState(false);
   const inputRef = useRef(null);
 
-  const activeTool = useMemo(() => tools.find((tool) => tool.id === selectedToolId) || tools[0], [selectedToolId]);
+  const activeTool = useMemo(() => tools.find((tool) => tool.id === matchToolId) || tools[0], [matchToolId]);
   const totalSize = useMemo(() => files.reduce((sum, item) => sum + item.file.size, 0), [files]);
 
   function openDropbox() {
@@ -272,24 +274,11 @@ function App() {
   }
 
   useEffect(() => {
-    function syncHash() {
-      const hashTool = tools.find((tool) => `#${tool.id}` === window.location.hash);
-      if (hashTool) {
-        setSelectedToolId(hashTool.id);
-        setPage('tool');
-        setFiles([]);
-        setProgress(0);
-        setError('');
-        window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'auto' }), 0);
-      } else if (['', '#tools', '#workflow', '#pricing', '#security'].includes(window.location.hash)) {
-        setPage('home');
-      }
-    }
-
-    syncHash();
-    window.addEventListener('hashchange', syncHash);
-    return () => window.removeEventListener('hashchange', syncHash);
-  }, []);
+    setFiles([]);
+    setProgress(0);
+    setError('');
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [location.pathname]);
 
   function fileMatchesTool(file) {
     const acceptParts = activeTool.accept.split(',').map((part) => part.trim().toLowerCase());
@@ -303,22 +292,11 @@ function App() {
   }
 
   function chooseTool(tool) {
-    setSelectedToolId(tool.id);
-    setPage('tool');
-    setFiles([]);
-    setProgress(0);
-    setError('');
-    window.location.hash = tool.id;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate('/' + tool.id);
   }
 
   function goHome() {
-    setPage('home');
-    setFiles([]);
-    setProgress(0);
-    setError('');
-    window.location.hash = '';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate('/');
   }
 
   function addFiles(fileList) {
@@ -418,53 +396,56 @@ function App() {
           onOpenAuth={() => setAuthModal(true)}
           onLogout={logout}
         />
-        {page === 'tool' ? (
-          <ToolPage
-            activeTool={activeTool}
-            files={files}
-            inputRef={inputRef}
-            isDragging={isDragging}
-            setIsDragging={setIsDragging}
-            addFiles={addFiles}
-            processFiles={processFiles}
-            isProcessing={isProcessing}
-            progress={progress}
-            error={error}
-            totalSize={totalSize}
-            removeFile={removeFile}
-            downloadFile={downloadFile}
-            onBack={goHome}
-            openGoogleDrive={openGoogleDrive}
-            openDropbox={openDropbox}
-            isDownloadingFromCloud={isDownloadingFromCloud}
-          />
-        ) : (
-          <>
-            <Hero
+        <Routes>
+          <Route path="/:toolId" element={
+            <ToolPage
+              activeTool={activeTool}
               files={files}
               inputRef={inputRef}
               isDragging={isDragging}
               setIsDragging={setIsDragging}
               addFiles={addFiles}
               processFiles={processFiles}
-              activeTool={activeTool}
               isProcessing={isProcessing}
               progress={progress}
               error={error}
+              totalSize={totalSize}
+              removeFile={removeFile}
+              downloadFile={downloadFile}
+              onBack={goHome}
               openGoogleDrive={openGoogleDrive}
               openDropbox={openDropbox}
               isDownloadingFromCloud={isDownloadingFromCloud}
             />
-            <ToolsGrid activeTool={activeTool} onSelectTool={chooseTool} />
-            <Features />
-            <Workflow />
-            <Dashboard files={files} totalSize={totalSize} removeFile={removeFile} downloadFile={downloadFile} />
-            <AiSummarizer />
-            <Testimonials />
-            <Pricing />
-            <Footer />
-          </>
-        )}
+          } />
+          <Route path="/" element={
+            <>
+              <Hero
+                files={files}
+                inputRef={inputRef}
+                isDragging={isDragging}
+                setIsDragging={setIsDragging}
+                addFiles={addFiles}
+                processFiles={processFiles}
+                activeTool={activeTool}
+                isProcessing={isProcessing}
+                progress={progress}
+                error={error}
+                openGoogleDrive={openGoogleDrive}
+                openDropbox={openDropbox}
+                isDownloadingFromCloud={isDownloadingFromCloud}
+              />
+              <ToolsGrid activeTool={activeTool} onSelectTool={chooseTool} />
+              <Features />
+              <Workflow />
+              <Dashboard files={files} totalSize={totalSize} removeFile={removeFile} downloadFile={downloadFile} />
+              <AiSummarizer />
+              <Testimonials />
+              <Pricing />
+              <Footer />
+            </>
+          } />
+        </Routes>
       </div>
       {/* Auth modal — rendered outside the scroll container */}
       <AuthModal
@@ -496,14 +477,14 @@ function ToolPage({
 
   return (
     <section className="relative mx-auto min-h-screen max-w-7xl px-4 pb-20 pt-32 sm:px-6 lg:px-8">
-      <button
-        type="button"
-        onClick={onBack}
-        className="mb-8 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-sm font-black text-slate-700 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:text-red-700"
-      >
-        <ChevronRight className="rotate-180" size={16} />
-        Back to all tools
-      </button>
+      <nav className="mb-8 flex items-center text-sm font-bold text-slate-500">
+        <button onClick={onBack} className="flex items-center gap-1 hover:text-red-700 transition">
+          <ChevronRight className="rotate-180" size={16} />
+          Back to all tools
+        </button>
+        <ChevronRight size={14} className="mx-2 opacity-50" />
+        <span className="text-slate-900">{activeTool.name}</span>
+      </nav>
 
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
         <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="lg:sticky lg:top-28">
@@ -632,7 +613,7 @@ function FloatingNav({ onHome, user, onOpenAuth, onLogout }) {
         </button>
         <div className="hidden items-center gap-1 md:flex">
           {links.map((link) => (
-            <a key={link} href={`#${link.toLowerCase()}`} className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-red-50 hover:text-red-700">
+            <a key={link} href={`/#${link.toLowerCase()}`} className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-red-50 hover:text-red-700">
               {link}
             </a>
           ))}
@@ -655,7 +636,7 @@ function FloatingNav({ onHome, user, onOpenAuth, onLogout }) {
         {open && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mx-auto mt-3 max-w-7xl rounded-3xl border border-slate-200/80 bg-white/95 p-3 shadow-premium backdrop-blur md:hidden">
             {links.map((link) => (
-              <a key={link} href={`#${link.toLowerCase()}`} onClick={() => setOpen(false)} className="block rounded-2xl px-4 py-3 font-semibold text-slate-700">
+              <a key={link} href={`/#${link.toLowerCase()}`} onClick={() => setOpen(false)} className="block rounded-2xl px-4 py-3 font-semibold text-slate-700">
                 {link}
               </a>
             ))}
@@ -1487,7 +1468,9 @@ function AuthModal({ open, onClose, onSuccess }) {
 
 // Wrap App in AuthProvider so useAuth() works everywhere
 createRoot(document.getElementById('root')).render(
-  <AuthProvider>
-    <App />
-  </AuthProvider>
+  <BrowserRouter>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </BrowserRouter>
 );
