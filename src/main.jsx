@@ -1036,10 +1036,9 @@ function Testimonials() {
 function Pricing() {
   return (
     <section id="pricing" className="px-4 py-20 sm:px-6 lg:px-8">
-      <SectionTitle eyebrow="Pricing" title="Start free, upgrade when work gets serious" subtitle="A simple pricing section ready to connect with your billing backend." />
-      <div className="mx-auto mt-12 grid max-w-5xl gap-6 md:grid-cols-2">
-        <Plan name="Free" price="$0" features={['10 files per day', 'Core conversion tools', 'Standard compression', 'Secure downloads']} />
-        <Plan featured name="Premium" price="$12" features={['Unlimited batch processing', 'AI summarizer and OCR', 'Cloud integrations', 'Priority API processing']} />
+      <SectionTitle eyebrow="100% Free" title="Free Forever" subtitle="No subscriptions, no hidden fees. All premium features are included completely for free." />
+      <div className="mx-auto mt-12 max-w-md">
+        <Plan featured name="Free Plan" price="$0" features={['Unlimited batch processing', 'AI summarizer and OCR', 'Cloud integrations', 'Priority API processing', 'Secure downloads']} />
       </div>
     </section>
   );
