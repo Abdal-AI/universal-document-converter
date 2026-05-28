@@ -66,52 +66,52 @@ function GoogleDriveIcon({ size = 24, className }) {
 }
 
 const tools = [
-  { id: 'pdf-to-word',       name: 'PDF to Word',       icon: FileText,       description: 'Extract PDF text into an editable DOCX file.',       accept: '.pdf,application/pdf',                     live: true },
-  { id: 'word-to-pdf',       name: 'Word to PDF',       icon: FileType,       description: 'Convert Word documents into polished PDFs.',         accept: '.doc,.docx',                               live: true },
-  { id: 'pdf-to-jpg',        name: 'PDF to JPG',        icon: FileImage,      description: 'Export PDF pages as JPG images.',                    accept: '.pdf,application/pdf',                     live: true },
-  { id: 'jpg-to-pdf',        name: 'JPG to PDF',        icon: Image,          description: 'Combine images into shareable PDFs.',               accept: '.jpg,.jpeg,image/jpeg',                    live: true },
-  { id: 'jpg-to-png',        name: 'JPG to PNG',        icon: FileImage,      description: 'Convert JPG images into PNG files.',                accept: '.jpg,.jpeg,image/jpeg',                    live: true },
-  { id: 'merge-pdf',         name: 'Merge PDF',         icon: Layers3,        description: 'Join multiple PDF files in the right order.',       accept: '.pdf,application/pdf',                     live: true },
-  { id: 'split-pdf',         name: 'Split PDF',         icon: Scissors,       description: 'Extract pages into separate PDF files.',            accept: '.pdf,application/pdf',                     live: true },
-  { id: 'compress-pdf',      name: 'Compress PDF',      icon: FileArchive,    description: 'Shrink PDF size without visible quality loss.',      accept: '.pdf,application/pdf',                     live: true },
-  { id: 'edit-pdf',          name: 'Edit PDF',          icon: FilePenLine,    description: 'Add text overlays and annotations to any PDF.',     accept: '.pdf,application/pdf',                     live: true },
-  { id: 'protect-pdf',       name: 'Protect PDF',       icon: FileLock2,      description: 'Add confidential watermarks and metadata.',         accept: '.pdf,application/pdf',                     live: true },
-  { id: 'unlock-pdf',        name: 'Unlock PDF',        icon: Lock,           description: 'Remove permission restrictions from PDFs.',         accept: '.pdf,application/pdf',                     live: true },
-  { id: 'rotate-pdf',        name: 'Rotate PDF',        icon: RotateCw,       description: 'Fix page orientation instantly.',                   accept: '.pdf,application/pdf',                     live: true },
-  { id: 'add-watermark',     name: 'Add Watermark',     icon: Droplets,       description: 'Brand files with custom text watermarks.',          accept: '.pdf,application/pdf',                     live: true },
-  { id: 'ocr-pdf',           name: 'OCR PDF',           icon: Sparkles,       description: 'Extract readable text from any PDF.',               accept: '.pdf,application/pdf',                     live: true },
-  { id: 'pdf-to-excel',      name: 'PDF to Excel',      icon: FileSpreadsheet, description: 'Extract PDF data into a structured CSV file.',    accept: '.pdf,application/pdf',                     live: true },
-  { id: 'excel-to-pdf',      name: 'Excel to PDF',      icon: FileOutput,     description: 'Publish clean PDF reports from spreadsheets.',     accept: '.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', live: true },
-  { id: 'pdf-to-powerpoint', name: 'PDF to PowerPoint', icon: Play,           description: 'Convert PDF pages into editable PPTX slides.',     accept: '.pdf,application/pdf',                     live: true },
-  { id: 'powerpoint-to-pdf', name: 'PowerPoint to PDF', icon: FileInput,      description: 'Convert PPTX slide decks into PDF files.',         accept: '.ppt,.pptx',                               live: true },
+  { id: 'pdf-to-word',       name: 'PDF to Word',       icon: FileText,        description: 'Pull the text out of a PDF and save it as a Word file you can edit.',                         accept: '.pdf,application/pdf',                     live: true },
+  { id: 'word-to-pdf',       name: 'Word to PDF',       icon: FileType,        description: 'Turn a Word doc into a PDF that looks right on every screen.',                               accept: '.doc,.docx',                               live: true },
+  { id: 'pdf-to-jpg',        name: 'PDF to JPG',        icon: FileImage,       description: 'Save each page as a JPG. Good for screenshots, previews, or sharing.',                       accept: '.pdf,application/pdf',                     live: true },
+  { id: 'jpg-to-pdf',        name: 'JPG to PDF',        icon: Image,           description: 'Got a bunch of images? Combine them into one PDF.',                                           accept: '.jpg,.jpeg,image/jpeg',                    live: true },
+  { id: 'jpg-to-png',        name: 'JPG to PNG',        icon: FileImage,       description: 'Converts your JPG to a PNG file.',                                                            accept: '.jpg,.jpeg,image/jpeg',                    live: true },
+  { id: 'merge-pdf',         name: 'Merge PDF',         icon: Layers3,         description: 'Combine several PDFs into one, in whatever order you need.',                                  accept: '.pdf,application/pdf',                     live: true },
+  { id: 'split-pdf',         name: 'Split PDF',         icon: Scissors,        description: 'Take one big PDF apart into separate pages or sections.',                                     accept: '.pdf,application/pdf',                     live: true },
+  { id: 'compress-pdf',      name: 'Compress PDF',      icon: FileArchive,     description: 'Shrinks the file size. The PDF still looks fine.',                                            accept: '.pdf,application/pdf',                     live: true },
+  { id: 'edit-pdf',          name: 'Edit PDF',          icon: FilePenLine,     description: 'Add text or a note to any page of your PDF.',                                                accept: '.pdf,application/pdf',                     live: true },
+  { id: 'protect-pdf',       name: 'Protect PDF',       icon: FileLock2,       description: 'Stamps every page with a confidential watermark.',                                            accept: '.pdf,application/pdf',                     live: true },
+  { id: 'unlock-pdf',        name: 'Unlock PDF',        icon: Lock,            description: "If your PDF is locked and won't let you do anything with it, try this.",                     accept: '.pdf,application/pdf',                     live: true },
+  { id: 'rotate-pdf',        name: 'Rotate PDF',        icon: RotateCw,        description: 'Fixes pages that came out sideways or upside down.',                                         accept: '.pdf,application/pdf',                     live: true },
+  { id: 'add-watermark',     name: 'Add Watermark',     icon: Droplets,        description: 'Put your name, brand, or any text across every page.',                                       accept: '.pdf,application/pdf',                     live: true },
+  { id: 'ocr-pdf',           name: 'OCR PDF',           icon: Sparkles,        description: 'Scanned a document? This reads the image and pulls out the actual text.',                    accept: '.pdf,application/pdf',                     live: true },
+  { id: 'pdf-to-excel',      name: 'PDF to Excel',      icon: FileSpreadsheet, description: 'Gets the data out of your PDF and into a CSV you can open in Excel.',                       accept: '.pdf,application/pdf',                     live: true },
+  { id: 'excel-to-pdf',      name: 'Excel to PDF',      icon: FileOutput,      description: 'Turns your spreadsheet into a shareable PDF report.',                                        accept: '.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', live: true },
+  { id: 'pdf-to-powerpoint', name: 'PDF to PowerPoint', icon: Play,            description: 'Converts PDF pages into slides you can open and edit in PowerPoint.',                        accept: '.pdf,application/pdf',                     live: true },
+  { id: 'powerpoint-to-pdf', name: 'PowerPoint to PDF', icon: FileInput,       description: "Saves your presentation as a PDF so the layout doesn't break when you share it.",           accept: '.ppt,.pptx',                               live: true },
 ];
 
 
 const features = [
-  ['Fast Conversion', Zap],
-  ['Secure File Processing', ShieldCheck],
-  ['Cloud Storage Support', Cloud],
-  ['Drag & Drop Upload', UploadCloud],
-  ['Batch Processing', Files],
-  ['AI Powered Compression', BrainCircuit],
-  ['Mobile Friendly', BadgeCheck],
+  ['Most files done in seconds', Zap],
+  ['Files processed privately', ShieldCheck],
+  ['Works with Drive and Dropbox', Cloud],
+  ['Drag in or click to upload', UploadCloud],
+  ['Handle a whole batch at once', Files],
+  ['Smaller files, same quality', BrainCircuit],
+  ['Works fine on your phone', BadgeCheck],
 ];
 
 const testimonials = [
   {
     name: 'Maya Chen',
     role: 'Operations Lead',
-    quote: 'PDFFlow replaced six separate tools for our team. It feels instant, calm, and reliable.',
+    quote: 'We used to bounce between six different tools. Now it\'s just this one.',
   },
   {
     name: 'Daniel Hart',
     role: 'Agency Founder',
-    quote: 'The upload flow is beautifully simple, and the dashboard makes batch work feel effortless.',
+    quote: 'Uploading is fast and obvious. The queue makes working through a big batch actually manageable.',
   },
   {
     name: 'Sara Malik',
     role: 'Legal Consultant',
-    quote: 'Secure PDF handling, clean previews, and fast downloads. Exactly what professional teams need.',
+    quote: 'Does what it says. Files come out clean and downloads are quick.',
   },
 ];
 
@@ -720,10 +720,10 @@ function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFil
           {activeTool.live ? 'Live local converter' : 'API-ready converter'}
         </div>
         <h1 className="text-balance text-5xl font-black leading-[1.02] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
-          Every PDF Tool You Need in One Place
+          Everything you need to work with PDFs
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-          Choose a tool, upload the matching files, and download real converted output from the local API where supported.
+          No extra apps, no jumping between tabs. Pick a tool, drop your file, and get the output.
         </p>
       </motion.div>
 
@@ -855,7 +855,7 @@ function StatusRow({ label, value }) {
 function ToolsGrid({ activeTool, onSelectTool }) {
   return (
     <section id="tools" className="relative px-4 py-20 sm:px-6 lg:px-8">
-      <SectionTitle eyebrow="PDF toolkit" title="A beautiful tool for every PDF job" subtitle="One consistent workflow across conversion, editing, compression, security, and OCR." />
+      <SectionTitle eyebrow="18 tools" title="One tool for every PDF job" subtitle="Conversion, editing, compression, security, OCR — it's all here and it all works the same way." />
       <div className="mx-auto mt-12 grid max-w-7xl gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         {tools.map((tool, index) => {
           const Icon = tool.icon;
@@ -908,7 +908,7 @@ function Features() {
     <section id="security" className="px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
         <div>
-          <SectionTitle align="left" eyebrow="Premium features" title="Built for teams that move fast" subtitle="Responsive, secure, and ready for cloud workflows, batch queues, and future backend API processing." />
+          <SectionTitle align="left" eyebrow="What you get" title="Fast, private, and works how you expect" subtitle="Files are processed locally and not stored. Works on your phone. Connects to Drive and Dropbox. No account required." />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {features.map(([label, Icon]) => (
@@ -928,12 +928,12 @@ function Features() {
 function Workflow() {
   return (
     <section id="workflow" className="px-4 py-20 sm:px-6 lg:px-8">
-      <SectionTitle eyebrow="Workflow" title="Upload, process, download" subtitle="A three-step conversion path that keeps users confident from first click to final file." />
+      <SectionTitle eyebrow="How it works" title="Three steps. That's it." subtitle="Pick a tool, add your file, download the result. Nothing else to figure out." />
       <div className="mx-auto mt-12 grid max-w-6xl gap-5 md:grid-cols-3">
         {[
-          ['Upload', UploadCloud, 'Drag files in, preview the queue, or import from cloud storage.'],
-          ['Process', Sparkles, 'Choose a PDF tool and watch real-time progress with clean status states.'],
-          ['Download', Download, 'Download converted files instantly or keep working in the dashboard.'],
+          ['Upload', UploadCloud, 'Drag your file in, or click to browse. You can also pull from Google Drive or Dropbox.'],
+          ['Convert', Sparkles, 'Hit the convert button. Most files finish in a few seconds.'],
+          ['Download', Download, 'Your file is ready. Download it straight away or grab it from the queue.'],
         ].map(([title, Icon, copy], index) => (
           <div key={title} className="relative rounded-[2rem] border border-slate-200/80 bg-white/80 p-7 shadow-premium backdrop-blur">
             <span className="absolute right-6 top-6 text-5xl font-black text-blue-100">0{index + 1}</span>
@@ -1025,9 +1025,9 @@ function AiSummarizer() {
             <BrainCircuit size={16} />
             AI PDF summarizer
           </div>
-          <h2 className="mt-6 text-3xl font-black tracking-tight sm:text-5xl">Understand long PDFs before you convert them</h2>
+          <h2 className="mt-6 text-3xl font-black tracking-tight sm:text-5xl">Read the gist before you touch a thing</h2>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            Generate summaries, extract action items, identify tables, and prepare OCR recommendations from uploaded documents.
+            Drop in a long PDF and get a plain-English summary back. Useful before you compress, convert, or share something you haven't actually read yet.
           </p>
           <button type="button" className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-black text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-1 hover:bg-blue-700">
             Try AI summary <ArrowRight size={18} />
@@ -1049,7 +1049,7 @@ function AiSummarizer() {
 function Testimonials() {
   return (
     <section className="px-4 py-20 sm:px-6 lg:px-8">
-      <SectionTitle eyebrow="Loved by professionals" title="Reviews from teams who live in PDFs" subtitle="Clean tools, fast processing, and a workflow that feels calm even during deadline work." />
+      <SectionTitle eyebrow="Real feedback" title="What people actually say" subtitle="From people who deal with PDFs every day and needed something that just works." />
       <div className="mx-auto mt-12 grid max-w-6xl gap-5 md:grid-cols-3">
         {testimonials.map((item) => (
           <div key={item.name} className="rounded-[2rem] border border-slate-200/80 bg-white/80 p-7 shadow-lg backdrop-blur">
@@ -1071,9 +1071,9 @@ function Testimonials() {
 function Pricing() {
   return (
     <section id="pricing" className="px-4 py-20 sm:px-6 lg:px-8">
-      <SectionTitle eyebrow="100% Free" title="Free Forever" subtitle="No subscriptions, no hidden fees. All premium features are included completely for free." />
+      <SectionTitle eyebrow="Pricing" title="Free to use" subtitle="No account needed to start. No subscriptions. No hidden anything." />
       <div className="mx-auto mt-12 max-w-md">
-        <Plan featured name="Free Plan" price="$0" features={['Unlimited batch processing', 'AI summarizer and OCR', 'Cloud integrations', 'Priority API processing', 'Secure downloads']} />
+        <Plan featured name="Free plan" price="$0" features={['Unlimited conversions', 'AI summarizer and OCR', 'Google Drive and Dropbox', 'Batch processing', 'Private file handling']} />
       </div>
     </section>
   );
@@ -1098,7 +1098,7 @@ function Plan({ name, price, features: planFeatures, featured }) {
         ))}
       </div>
       <button type="button" className={classNames('mt-8 w-full rounded-2xl px-5 py-4 font-black transition hover:-translate-y-1', featured ? 'bg-white text-blue-700' : 'bg-blue-600 text-white hover:bg-blue-700')}>
-        Get started
+        Start converting
       </button>
     </div>
   );
@@ -1115,7 +1115,7 @@ function Footer() {
             </span>
             <span className="text-lg font-black">PDFFlow</span>
           </div>
-          <p className="mt-4 max-w-sm leading-7 text-slate-600">A premium all-in-one PDF converter experience with secure upload flows and modern conversion tools.</p>
+          <p className="mt-4 max-w-sm leading-7 text-slate-600">Working with PDFs is annoying. This helps.</p>
           <div className="mt-5 flex gap-2">
             {[Globe2, Link2, Mail].map((Icon, index) => (
               <a key={index} href="#" aria-label="Social link" className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:-translate-y-0.5 hover:text-blue-700">
@@ -1141,7 +1141,7 @@ function Footer() {
           </div>
         ))}
       </div>
-      <p className="mx-auto mt-6 max-w-7xl text-center text-sm font-semibold text-slate-500">Copyright 2026 PDFFlow. Built for fast, secure document workflows.</p>
+      <p className="mx-auto mt-6 max-w-7xl text-center text-sm font-semibold text-slate-500">© 2026 PDFFlow. Working with PDFs is annoying. This helps.</p>
     </footer>
   );
 }
