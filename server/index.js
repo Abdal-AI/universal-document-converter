@@ -24,7 +24,7 @@ import { createRequire } from 'node:module';
 import db, { initDb } from './db.js';
 
 const require = createRequire(import.meta.url);
-const { PDFParse } = require('pdf-parse');
+const PDFParse = require('pdf-parse');
 
 // ─── JWT secret ───────────────────────────────────────────────────────────────
 const JWT_SECRET =

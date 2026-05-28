@@ -178,6 +178,7 @@ function App() {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
   const [isDownloadingFromCloud, setIsDownloadingFromCloud] = useState(false);
+  const [toolParams, setToolParams] = useState({});
   const inputRef = useRef(null);
 
   const activeTool = useMemo(() => tools.find((tool) => tool.id === matchToolId) || tools[0], [matchToolId]);
@@ -253,15 +254,18 @@ function App() {
                             const res = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
                                headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
                             });
+                            if (!res.ok) throw new Error(`Could not download "${doc.name}" — check file permissions.`);
                             const blob = await res.blob();
                             return new File([blob], doc.name, { type: doc.mimeType });
                          }));
                          addFiles(downloadedFiles);
                       } catch(err) {
-                         setError("Failed to download from Google Drive.");
+                         setError(err.message || "Failed to download from Google Drive.");
                       } finally {
                          setIsDownloadingFromCloud(false);
                       }
+                   } else if (data.action === window.google.picker.Action.CANCEL) {
+                      setIsDownloadingFromCloud(false);
                    }
                 })
                 .build();
@@ -277,6 +281,7 @@ function App() {
     setFiles([]);
     setProgress(0);
     setError('');
+    setToolParams({});
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [location.pathname]);
 
@@ -335,8 +340,12 @@ function App() {
     try {
       const body = new FormData();
       files.forEach((item) => body.append('files', item.file));
+      if (toolParams.watermark) body.append('watermark', toolParams.watermark);
+      if (toolParams.overlayText !== undefined) body.append('overlayText', toolParams.overlayText);
+      if (toolParams.pageNum !== undefined) body.append('pageNum', String(toolParams.pageNum));
       const response = await fetch(apiUrl(`/api/convert/${activeTool.id}`), {
         method: 'POST',
+        credentials: 'include',
         body,
       });
 
@@ -416,6 +425,8 @@ function App() {
               openGoogleDrive={openGoogleDrive}
               openDropbox={openDropbox}
               isDownloadingFromCloud={isDownloadingFromCloud}
+              toolParams={toolParams}
+              setToolParams={setToolParams}
             />
           } />
           <Route path="/" element={
@@ -472,6 +483,11 @@ function ToolPage({
   removeFile,
   downloadFile,
   onBack,
+  openGoogleDrive,
+  openDropbox,
+  isDownloadingFromCloud,
+  toolParams,
+  setToolParams,
 }) {
   const Icon = activeTool.icon;
 
@@ -569,6 +585,44 @@ function ToolPage({
               </motion.p>
             )}
           </AnimatePresence>
+
+          {activeTool.id === 'add-watermark' && (
+            <div className="mt-5">
+              <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wide">Watermark Text</label>
+              <input
+                type="text"
+                value={toolParams.watermark ?? 'PDFFlow'}
+                onChange={(e) => setToolParams((p) => ({ ...p, watermark: e.target.value }))}
+                placeholder="e.g. CONFIDENTIAL"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+              />
+            </div>
+          )}
+
+          {activeTool.id === 'edit-pdf' && (
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <div className="flex-1">
+                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wide">Text to Add</label>
+                <input
+                  type="text"
+                  value={toolParams.overlayText ?? ''}
+                  onChange={(e) => setToolParams((p) => ({ ...p, overlayText: e.target.value }))}
+                  placeholder="e.g. Edited by Abdal"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                />
+              </div>
+              <div className="w-32">
+                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wide">Page #</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={toolParams.pageNum ?? 0}
+                  onChange={(e) => setToolParams((p) => ({ ...p, pageNum: Math.max(0, parseInt(e.target.value) || 0) }))}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
             <button type="button" onClick={processFiles} disabled={!files.length || isProcessing} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
