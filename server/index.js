@@ -35,8 +35,19 @@ const BCRYPT_ROUNDS = 12;
 
 // ─── Express setup ────────────────────────────────────────────────────────────
 const app = express();
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:4173',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:4173'],
+  origin: (origin, cb) => {
+    // Allow same-origin requests (no Origin header) and listed origins
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin ${origin} not allowed`));
+  },
   credentials: true,
 }));
 app.use(express.json());
@@ -59,7 +70,7 @@ app.use(async (_req, _res, next) => {
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 function sanitizeUser(user) {
-  const { password: _p, ...safe } = user;
+  const { password: _p, google_id: _g, ...safe } = user;
   return safe;
 }
 function setAuthCookie(res, payload) {
@@ -158,6 +169,60 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('[me]', err);
     return res.status(500).json({ error: 'Failed to fetch user.' });
+  }
+});
+
+// ─── Google OAuth ─────────────────────────────────────────────────────────────
+app.post('/api/auth/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) return res.status(400).json({ error: 'No Google credential provided.' });
+
+    // Verify the ID token with Google's tokeninfo endpoint (no extra packages needed)
+    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+    if (!verifyRes.ok) return res.status(401).json({ error: 'Invalid Google token. Please try again.' });
+
+    const payload = await verifyRes.json();
+
+    // Validate the token was issued for our app
+    const expectedClientId = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+    if (expectedClientId && payload.aud !== expectedClientId) {
+      return res.status(401).json({ error: 'Token audience mismatch.' });
+    }
+
+    const { sub: googleId, email, name, picture } = payload;
+    if (!email) return res.status(400).json({ error: 'Google account has no email.' });
+
+    await db.read();
+
+    // Find existing user by google_id or email
+    let user = db.data.users.find((u) => u.google_id === googleId || u.email === email);
+
+    if (!user) {
+      // New user — create account automatically
+      user = {
+        id: crypto.randomUUID(),
+        name: name || email.split('@')[0],
+        email: email.toLowerCase(),
+        google_id: googleId,
+        picture: picture || null,
+        password: null,
+        createdAt: new Date().toISOString(),
+      };
+      db.data.users.push(user);
+      await db.write();
+    } else if (!user.google_id) {
+      // Existing email/password user — link their Google account
+      user.google_id = googleId;
+      user.picture = picture || user.picture || null;
+      await db.write();
+    }
+
+    setAuthCookie(res, { id: user.id, email: user.email });
+    return res.status(200).json({ user: sanitizeUser(user) });
+  } catch (err) {
+    console.error('[google-auth]', err);
+    return res.status(500).json({ error: 'Google sign-in failed. Please try again.' });
   }
 });
 

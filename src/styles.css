@@ -23,11 +23,11 @@ a {
 }
 
 .shadow-premium {
-  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.10);
 }
 
 .shadow-glow {
-  box-shadow: 0 18px 60px rgba(255, 45, 45, 0.24);
+  box-shadow: 0 18px 60px rgba(37, 99, 235, 0.28);
 }
 
 .text-balance {

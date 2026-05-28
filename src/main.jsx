@@ -494,7 +494,7 @@ function ToolPage({
   return (
     <section className="relative mx-auto min-h-screen max-w-7xl px-4 pb-20 pt-32 sm:px-6 lg:px-8">
       <nav className="mb-8 flex items-center text-sm font-bold text-slate-500">
-        <button onClick={onBack} className="flex items-center gap-1 hover:text-red-700 transition">
+        <button onClick={onBack} className="flex items-center gap-1 hover:text-blue-700 transition">
           <ChevronRight className="rotate-180" size={16} />
           Back to all tools
         </button>
@@ -504,7 +504,7 @@ function ToolPage({
 
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
         <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="lg:sticky lg:top-28">
-          <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white/80 px-4 py-2 text-sm font-black text-red-700 shadow-lg shadow-red-600/10 backdrop-blur">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-2 text-sm font-black text-blue-700 shadow-lg shadow-blue-600/10 backdrop-blur">
             <Icon size={16} />
             {activeTool.live ? 'Working converter' : 'Converter engine required'}
           </div>
@@ -542,12 +542,12 @@ function ToolPage({
               addFiles(event.dataTransfer.files);
             }}
             className={classNames(
-              'grid min-h-[24rem] w-full place-items-center rounded-[1.6rem] border-2 border-dashed border-red-200 bg-red-50/70 p-8 text-center transition',
-              isDragging && 'scale-[1.01] border-red-500 shadow-glow'
+              'grid min-h-[24rem] w-full place-items-center rounded-[1.6rem] border-2 border-dashed border-blue-200 bg-blue-50/70 p-8 text-center transition',
+              isDragging && 'scale-[1.01] border-blue-500 shadow-glow'
             )}
           >
             <div className="flex flex-col items-center w-full max-w-sm">
-              <span className="grid h-20 w-20 place-items-center rounded-3xl bg-red-600 text-white shadow-glow mb-6">
+              <span className="grid h-20 w-20 place-items-center rounded-3xl bg-blue-600 text-white shadow-glow mb-6">
                 <UploadCloud size={34} />
               </span>
               <span className="block text-2xl font-black text-slate-950">Drop files here</span>
@@ -556,20 +556,20 @@ function ToolPage({
               </span>
               
               {isDownloadingFromCloud ? (
-                 <div className="flex flex-col items-center gap-3 py-6 text-red-600">
+                 <div className="flex flex-col items-center gap-3 py-6 text-blue-600">
                     <Loader2 className="animate-spin" size={32} />
                     <span className="font-bold text-sm">Downloading from cloud...</span>
                  </div>
               ) : (
                  <div className="flex flex-col w-full gap-3">
-                    <button type="button" onClick={() => inputRef.current?.click()} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-red-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-red-700">
+                    <button type="button" onClick={() => inputRef.current?.click()} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-blue-700">
                        <Monitor size={20} /> Upload from Computer
                     </button>
                     <div className="grid grid-cols-2 gap-3 w-full">
-                       <button type="button" onClick={openGoogleDrive} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-red-300 hover:text-red-600">
+                       <button type="button" onClick={openGoogleDrive} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:text-blue-600">
                           <GoogleDriveIcon size={18} /> Google Drive
                        </button>
-                       <button type="button" onClick={openDropbox} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-red-300 hover:text-red-600">
+                       <button type="button" onClick={openDropbox} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:text-blue-600">
                           <DropboxIcon size={18} /> Dropbox
                        </button>
                     </div>
@@ -580,7 +580,7 @@ function ToolPage({
 
           <AnimatePresence>
             {error && (
-              <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+              <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
                 {error}
               </motion.p>
             )}
@@ -594,7 +594,7 @@ function ToolPage({
                 value={toolParams.watermark ?? 'PDFFlow'}
                 onChange={(e) => setToolParams((p) => ({ ...p, watermark: e.target.value }))}
                 placeholder="e.g. CONFIDENTIAL"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               />
             </div>
           )}
@@ -608,7 +608,7 @@ function ToolPage({
                   value={toolParams.overlayText ?? ''}
                   onChange={(e) => setToolParams((p) => ({ ...p, overlayText: e.target.value }))}
                   placeholder="e.g. Edited by Abdal"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
               <div className="w-32">
@@ -618,18 +618,18 @@ function ToolPage({
                   min="0"
                   value={toolParams.pageNum ?? 0}
                   onChange={(e) => setToolParams((p) => ({ ...p, pageNum: Math.max(0, parseInt(e.target.value) || 0) }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
             </div>
           )}
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-            <button type="button" onClick={processFiles} disabled={!files.length || isProcessing} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="button" onClick={processFiles} disabled={!files.length || isProcessing} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
               {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
               Convert {activeTool.name}
             </button>
-            <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 font-black text-slate-800 shadow-lg transition hover:-translate-y-1 hover:border-red-300">
+            <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 font-black text-slate-800 shadow-lg transition hover:-translate-y-1 hover:border-blue-300">
               <UploadCloud size={20} />
               Add more files
             </button>
@@ -638,7 +638,7 @@ function ToolPage({
           {(isProcessing || progress > 0) && (
             <div className="mt-5 rounded-2xl bg-slate-100 p-2">
               <div className="h-3 overflow-hidden rounded-full bg-white">
-                <motion.div className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400" animate={{ width: `${progress}%` }} />
+                <motion.div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400" animate={{ width: `${progress}%` }} />
               </div>
             </div>
           )}
@@ -658,16 +658,16 @@ function FloatingNav({ onHome, user, onOpenAuth, onLogout }) {
 
   return (
     <header className="fixed left-0 right-0 top-4 z-50 px-4">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-slate-200/80 bg-white/95 px-4 py-3 shadow-xl shadow-red-900/5 backdrop-blur-2xl">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-slate-200/80 bg-white/95 px-4 py-3 shadow-xl shadow-blue-900/5 backdrop-blur-2xl">
         <button type="button" onClick={onHome} className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-red-600 text-white shadow-glow">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-blue-600 text-white shadow-glow">
             <Sparkles size={20} />
           </span>
           <span className="text-lg font-black tracking-tight text-slate-950">PDFFlow</span>
         </button>
         <div className="hidden items-center gap-1 md:flex">
           {links.map((link) => (
-            <a key={link} href={`/#${link.toLowerCase()}`} className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-red-50 hover:text-red-700">
+            <a key={link} href={`/#${link.toLowerCase()}`} className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700">
               {link}
             </a>
           ))}
@@ -677,11 +677,11 @@ function FloatingNav({ onHome, user, onOpenAuth, onLogout }) {
           {user ? (
             <UserAvatar user={user} onLogout={onLogout} />
           ) : (
-            <button type="button" onClick={onOpenAuth} className="hidden rounded-full bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-600/20 transition hover:-translate-y-0.5 hover:bg-red-700 md:inline-flex">
+            <button type="button" onClick={onOpenAuth} className="hidden rounded-full bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700 md:inline-flex">
               Sign in
             </button>
           )}
-          <button type="button" aria-label="Open menu" onClick={() => setOpen((value) => !value)} className="grid h-10 w-10 place-items-center rounded-full bg-red-600 text-white md:hidden">
+          <button type="button" aria-label="Open menu" onClick={() => setOpen((value) => !value)} className="grid h-10 w-10 place-items-center rounded-full bg-blue-600 text-white md:hidden">
             <Menu size={18} />
           </button>
         </div>
@@ -696,11 +696,11 @@ function FloatingNav({ onHome, user, onOpenAuth, onLogout }) {
             ))}
             {/* Mobile auth action */}
             {user ? (
-              <button type="button" onClick={() => { setOpen(false); onLogout(); }} className="mt-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 font-bold text-red-600">
+              <button type="button" onClick={() => { setOpen(false); onLogout(); }} className="mt-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 font-bold text-blue-600">
                 <LogOut size={15} /> Sign out
               </button>
             ) : (
-              <button type="button" onClick={() => { setOpen(false); onOpenAuth(); }} className="mt-1 w-full rounded-2xl bg-red-600 px-4 py-3 font-bold text-white">
+              <button type="button" onClick={() => { setOpen(false); onOpenAuth(); }} className="mt-1 w-full rounded-2xl bg-blue-600 px-4 py-3 font-bold text-white">
                 Sign in
               </button>
             )}
@@ -715,7 +715,7 @@ function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFil
   return (
     <section id="upload" className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 pb-20 pt-32 sm:px-6 lg:px-8">
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="mx-auto max-w-4xl text-center">
-        <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-red-200 bg-white/80 px-4 py-2 text-sm font-bold text-red-700 shadow-lg shadow-red-600/10 backdrop-blur">
+        <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-2 text-sm font-bold text-blue-700 shadow-lg shadow-blue-600/10 backdrop-blur">
           <WandSparkles size={16} />
           {activeTool.live ? 'Live local converter' : 'API-ready converter'}
         </div>
@@ -746,35 +746,35 @@ function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFil
           }}
           className={classNames(
             'relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 p-5 shadow-premium backdrop-blur-2xl transition duration-300 sm:p-8',
-            isDragging && 'scale-[1.01] border-red-400 shadow-glow'
+            isDragging && 'scale-[1.01] border-blue-400 shadow-glow'
           )}
         >
           <input ref={inputRef} type="file" accept={activeTool.accept} multiple className="hidden" onChange={(event) => addFiles(event.target.files)} />
           <div className="relative grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
             
-            <div className="grid min-h-72 place-items-center rounded-[1.5rem] border-2 border-dashed border-red-200 bg-red-50/70 p-6 text-center transition">
+            <div className="grid min-h-72 place-items-center rounded-[1.5rem] border-2 border-dashed border-blue-200 bg-blue-50/70 p-6 text-center transition">
               <div className="flex flex-col items-center w-full max-w-sm">
-                <span className="grid h-16 w-16 place-items-center rounded-[1.5rem] bg-red-600 text-white shadow-glow mb-5">
+                <span className="grid h-16 w-16 place-items-center rounded-[1.5rem] bg-blue-600 text-white shadow-glow mb-5">
                   <UploadCloud size={28} />
                 </span>
                 <span className="block text-xl font-black text-slate-950">Drop files for {activeTool.name}</span>
                 <span className="mt-2 block text-sm font-semibold text-slate-500 mb-6">or click a method below to browse</span>
                 
                 {isDownloadingFromCloud ? (
-                   <div className="flex flex-col items-center gap-2 py-4 text-red-600">
+                   <div className="flex flex-col items-center gap-2 py-4 text-blue-600">
                       <Loader2 className="animate-spin" size={28} />
                       <span className="font-bold text-sm">Downloading from cloud...</span>
                    </div>
                 ) : (
                    <div className="flex flex-col w-full gap-2">
-                      <button type="button" onClick={() => inputRef.current?.click()} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-red-600 px-5 py-3 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-red-700">
+                      <button type="button" onClick={() => inputRef.current?.click()} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 px-5 py-3 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-blue-700">
                          <Monitor size={18} /> Upload from Computer
                       </button>
                       <div className="grid grid-cols-2 gap-2 w-full">
-                         <button type="button" onClick={openGoogleDrive} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-red-300 hover:text-red-600">
+                         <button type="button" onClick={openGoogleDrive} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:text-blue-600">
                             <GoogleDriveIcon size={16} /> Google Drive
                          </button>
-                         <button type="button" onClick={openDropbox} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-red-300 hover:text-red-600">
+                         <button type="button" onClick={openDropbox} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:text-blue-600">
                             <DropboxIcon size={16} /> Dropbox
                          </button>
                       </div>
@@ -787,7 +787,7 @@ function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFil
               <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-lg">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-bold text-slate-500">Upload status</p>
-                  <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-700">
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
                     Secure
                   </span>
                 </div>
@@ -800,17 +800,17 @@ function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFil
               </div>
               <AnimatePresence>
                 {error && (
-                  <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                  <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
                     {error}
                   </motion.p>
                 )}
               </AnimatePresence>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <button type="button" onClick={processFiles} disabled={!files.length || isProcessing} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="button" onClick={processFiles} disabled={!files.length || isProcessing} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-black text-white shadow-glow transition hover:-translate-y-1 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
                   {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
                   Run {activeTool.name}
                 </button>
-                <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 font-black text-slate-800 shadow-lg transition hover:-translate-y-1 hover:border-red-300">
+                <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 font-black text-slate-800 shadow-lg transition hover:-translate-y-1 hover:border-blue-300">
                   <UploadCloud size={20} />
                   Add files
                 </button>
@@ -818,7 +818,7 @@ function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFil
               {(isProcessing || progress > 0) && (
                 <div className="rounded-2xl bg-slate-100 p-2">
                   <div className="h-3 overflow-hidden rounded-full bg-white">
-                    <motion.div className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400" animate={{ width: `${progress}%` }} />
+                    <motion.div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400" animate={{ width: `${progress}%` }} />
                   </div>
                 </div>
               )}
@@ -834,7 +834,7 @@ function Hero({ files, inputRef, isDragging, setIsDragging, addFiles, processFil
           ['256-bit', 'encrypted flow'],
         ].map(([value, label]) => (
           <div key={label} className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-lg backdrop-blur">
-            <p className="text-2xl font-black text-red-600 sm:text-3xl">{value}</p>
+            <p className="text-2xl font-black text-blue-600 sm:text-3xl">{value}</p>
             <p className="mt-1 text-xs font-bold uppercase tracking-wider text-slate-500">{label}</p>
           </div>
         ))}
@@ -871,17 +871,17 @@ function ToolsGrid({ activeTool, onSelectTool }) {
             viewport={{ once: true, amount: 0.2 }}
             transition={{ delay: Math.min(index * 0.025, 0.25) }}
             className={classNames(
-              'group rounded-3xl border p-5 text-left shadow-lg shadow-red-950/5 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-premium',
+              'group rounded-3xl border p-5 text-left shadow-lg shadow-blue-950/5 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-premium',
               selected
-                ? 'border-red-300 bg-red-600 text-white'
+                ? 'border-blue-300 bg-blue-600 text-white'
                 : 'border-slate-200/80 bg-white/95'
             )}
           >
             <span className={classNames(
               'grid h-12 w-12 place-items-center rounded-2xl transition group-hover:scale-110',
               selected
-                ? 'bg-white text-red-600'
-                : 'bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white'
+                ? 'bg-white text-blue-600'
+                : 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white'
             )}>
               <Icon size={22} />
             </span>
@@ -889,12 +889,12 @@ function ToolsGrid({ activeTool, onSelectTool }) {
               <h3 className="text-base font-black">{tool.name}</h3>
               <span className={classNames(
                 'rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide',
-                selected ? 'bg-white/20 text-white' : tool.live ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-500'
+                selected ? 'bg-white/20 text-white' : tool.live ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
               )}>
                 {tool.live ? 'Live' : 'Engine'}
               </span>
             </div>
-            <p className={classNames('mt-2 text-sm leading-6', selected ? 'text-red-50' : 'text-slate-500')}>{tool.description}</p>
+            <p className={classNames('mt-2 text-sm leading-6', selected ? 'text-blue-50' : 'text-slate-500')}>{tool.description}</p>
           </motion.button>
           );
         })}
@@ -913,7 +913,7 @@ function Features() {
         <div className="grid gap-4 sm:grid-cols-2">
           {features.map(([label, Icon]) => (
             <div key={label} className="flex items-center gap-4 rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-lg backdrop-blur">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-red-50 text-red-700">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-700">
                 <Icon size={22} />
               </span>
               <span className="font-black">{label}</span>
@@ -936,8 +936,8 @@ function Workflow() {
           ['Download', Download, 'Download converted files instantly or keep working in the dashboard.'],
         ].map(([title, Icon, copy], index) => (
           <div key={title} className="relative rounded-[2rem] border border-slate-200/80 bg-white/80 p-7 shadow-premium backdrop-blur">
-            <span className="absolute right-6 top-6 text-5xl font-black text-red-100">0{index + 1}</span>
-            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-red-600 text-white shadow-glow">
+            <span className="absolute right-6 top-6 text-5xl font-black text-blue-100">0{index + 1}</span>
+            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-600 text-white shadow-glow">
               <Icon size={24} />
             </span>
             <h3 className="mt-8 text-2xl font-black">{title}</h3>
@@ -955,7 +955,7 @@ function Dashboard({ files, totalSize, removeFile, downloadFile, compact = false
       <div className={classNames('mx-auto rounded-[2rem] border border-slate-200/80 bg-white p-4 text-slate-950 shadow-premium sm:p-6', compact ? 'max-w-none lg:p-6' : 'max-w-7xl lg:p-8')}>
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-red-600">Uploaded files dashboard</p>
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">Uploaded files dashboard</p>
             <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Your conversion queue</h2>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -964,13 +964,13 @@ function Dashboard({ files, totalSize, removeFile, downloadFile, compact = false
             <MiniMetric label="Mode" value="Secure" />
           </div>
         </div>
-        <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-red-950/5">
+        <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-blue-950/5">
           {files.length ? (
             <div className="divide-y divide-slate-100">
               {files.map((item) => (
                 <div key={item.id} className="grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
                   <div className="flex min-w-0 items-center gap-4">
-                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-red-50 text-red-600">
+                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600">
                       <FileText size={22} />
                     </span>
                     <div className="min-w-0">
@@ -979,11 +979,11 @@ function Dashboard({ files, totalSize, removeFile, downloadFile, compact = false
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => downloadFile(item)} disabled={item.status !== 'Converted'} className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-red-600/20 transition hover:-translate-y-0.5 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-45">
+                    <button type="button" onClick={() => downloadFile(item)} disabled={item.status !== 'Converted'} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-45">
                       <Download size={16} />
                       Download
                     </button>
-                    <button type="button" aria-label="Remove file" onClick={() => removeFile(item.id)} className="grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 text-slate-500 transition hover:bg-red-50 hover:text-red-600">
+                    <button type="button" aria-label="Remove file" onClick={() => removeFile(item.id)} className="grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 text-slate-500 transition hover:bg-blue-50 hover:text-blue-600">
                       <X size={16} />
                     </button>
                   </div>
@@ -993,7 +993,7 @@ function Dashboard({ files, totalSize, removeFile, downloadFile, compact = false
           ) : (
             <div className="grid min-h-56 place-items-center p-8 text-center">
               <div>
-                <span className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-red-50 text-red-600">
+                <span className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-blue-50 text-blue-600">
                   <Files size={28} />
                 </span>
                 <h3 className="mt-5 text-xl font-black">No files uploaded yet</h3>
@@ -1019,9 +1019,9 @@ function MiniMetric({ label, value }) {
 function AiSummarizer() {
   return (
     <section className="px-4 py-20 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] border border-red-100 bg-gradient-to-br from-white to-red-50 p-6 shadow-premium lg:grid-cols-[1fr_0.9fr] lg:p-10">
+      <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] border border-blue-100 bg-gradient-to-br from-white to-blue-50 p-6 shadow-premium lg:grid-cols-[1fr_0.9fr] lg:p-10">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-black text-white shadow-glow">
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-glow">
             <BrainCircuit size={16} />
             AI PDF summarizer
           </div>
@@ -1029,14 +1029,14 @@ function AiSummarizer() {
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
             Generate summaries, extract action items, identify tables, and prepare OCR recommendations from uploaded documents.
           </p>
-          <button type="button" className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-red-600 px-6 py-4 font-black text-white shadow-lg shadow-red-600/20 transition hover:-translate-y-1 hover:bg-red-700">
+          <button type="button" className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-black text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-1 hover:bg-blue-700">
             Try AI summary <ArrowRight size={18} />
           </button>
         </div>
         <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-lg">
           {['Executive summary', 'Key dates and numbers', 'Detected tables', 'Recommended compression'].map((item, index) => (
             <div key={item} className="mb-3 flex items-center gap-3 rounded-2xl bg-slate-50 p-4 last:mb-0">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-red-100 text-sm font-black text-red-700">{index + 1}</span>
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-blue-100 text-sm font-black text-blue-700">{index + 1}</span>
               <span className="font-bold">{item}</span>
             </div>
           ))}
@@ -1053,7 +1053,7 @@ function Testimonials() {
       <div className="mx-auto mt-12 grid max-w-6xl gap-5 md:grid-cols-3">
         {testimonials.map((item) => (
           <div key={item.name} className="rounded-[2rem] border border-slate-200/80 bg-white/80 p-7 shadow-lg backdrop-blur">
-            <div className="mb-5 flex gap-1 text-red-500">
+            <div className="mb-5 flex gap-1 text-blue-500">
               {Array.from({ length: 5 }).map((_, index) => <Star key={index} size={18} fill="currentColor" />)}
             </div>
             <p className="leading-7 text-slate-600">"{item.quote}"</p>
@@ -1081,7 +1081,7 @@ function Pricing() {
 
 function Plan({ name, price, features: planFeatures, featured }) {
   return (
-    <div className={classNames('rounded-[2rem] border p-7 shadow-premium', featured ? 'border-red-500 bg-red-600 text-white' : 'border-slate-200/80 bg-white/95')}>
+    <div className={classNames('rounded-[2rem] border p-7 shadow-premium', featured ? 'border-blue-500 bg-blue-600 text-white' : 'border-slate-200/80 bg-white/95')}>
       <div className="flex items-center justify-between gap-4">
         <h3 className="text-2xl font-black">{name}</h3>
         {featured && <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black">Best value</span>}
@@ -1090,14 +1090,14 @@ function Plan({ name, price, features: planFeatures, featured }) {
       <div className="mt-7 space-y-3">
         {planFeatures.map((feature) => (
           <div key={feature} className="flex items-center gap-3">
-            <span className={classNames('grid h-6 w-6 place-items-center rounded-full', featured ? 'bg-white text-red-700' : 'bg-red-100 text-red-700')}>
+            <span className={classNames('grid h-6 w-6 place-items-center rounded-full', featured ? 'bg-white text-blue-700' : 'bg-blue-100 text-blue-700')}>
               <Check size={14} />
             </span>
             <span className="font-semibold">{feature}</span>
           </div>
         ))}
       </div>
-      <button type="button" className={classNames('mt-8 w-full rounded-2xl px-5 py-4 font-black transition hover:-translate-y-1', featured ? 'bg-white text-red-700' : 'bg-red-600 text-white hover:bg-red-700')}>
+      <button type="button" className={classNames('mt-8 w-full rounded-2xl px-5 py-4 font-black transition hover:-translate-y-1', featured ? 'bg-white text-blue-700' : 'bg-blue-600 text-white hover:bg-blue-700')}>
         Get started
       </button>
     </div>
@@ -1110,7 +1110,7 @@ function Footer() {
       <div className="mx-auto grid max-w-7xl gap-10 rounded-[2rem] border border-slate-200/80 bg-white/80 p-8 shadow-lg backdrop-blur md:grid-cols-[1.2fr_1fr_1fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-red-600 text-white">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-blue-600 text-white">
               <Sparkles size={20} />
             </span>
             <span className="text-lg font-black">PDFFlow</span>
@@ -1118,7 +1118,7 @@ function Footer() {
           <p className="mt-4 max-w-sm leading-7 text-slate-600">A premium all-in-one PDF converter experience with secure upload flows and modern conversion tools.</p>
           <div className="mt-5 flex gap-2">
             {[Globe2, Link2, Mail].map((Icon, index) => (
-              <a key={index} href="#" aria-label="Social link" className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:-translate-y-0.5 hover:text-red-700">
+              <a key={index} href="#" aria-label="Social link" className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:-translate-y-0.5 hover:text-blue-700">
                 <Icon size={17} />
               </a>
             ))}
@@ -1133,7 +1133,7 @@ function Footer() {
             <h3 className="font-black">{title}</h3>
             <div className="mt-4 space-y-3">
               {links.map((link) => (
-                <a key={link} href="#" className="block text-sm font-semibold text-slate-500 transition hover:text-red-700">
+                <a key={link} href="#" className="block text-sm font-semibold text-slate-500 transition hover:text-blue-700">
                   {link}
                 </a>
               ))}
@@ -1149,7 +1149,7 @@ function Footer() {
 function SectionTitle({ eyebrow, title, subtitle, align = 'center' }) {
   return (
     <div className={classNames('mx-auto max-w-3xl', align === 'center' ? 'text-center' : 'text-left')}>
-      <p className="text-sm font-black uppercase tracking-[0.22em] text-red-600">{eyebrow}</p>
+      <p className="text-sm font-black uppercase tracking-[0.22em] text-blue-600">{eyebrow}</p>
       <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">{title}</h2>
       <p className="mt-5 text-lg leading-8 text-slate-600">{subtitle}</p>
     </div>
@@ -1161,8 +1161,8 @@ function inputClass(hasError) {
   return classNames(
     'w-full rounded-xl border bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2',
     hasError
-      ? 'border-red-400 focus:ring-red-400'
-      : 'border-slate-200 focus:border-red-400 focus:ring-red-400'
+      ? 'border-blue-400 focus:ring-blue-400'
+      : 'border-slate-200 focus:border-blue-400 focus:ring-blue-400'
   );
 }
 
@@ -1178,7 +1178,7 @@ function Field({ label, error, children }) {
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="mt-1.5 text-xs font-semibold text-red-600"
+            className="mt-1.5 text-xs font-semibold text-blue-600"
           >
             {error}
           </motion.p>
@@ -1208,7 +1208,10 @@ function UserAvatar({ user, onLogout }) {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 text-sm font-bold text-slate-800 shadow-sm transition hover:-translate-y-0.5"
       >
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-red-600 text-xs font-black text-white">{initials}</span>
+        {user.picture
+          ? <img src={user.picture} alt={user.name} className="h-7 w-7 rounded-full object-cover" referrerPolicy="no-referrer" />
+          : <span className="grid h-7 w-7 place-items-center rounded-full bg-blue-600 text-xs font-black text-white">{initials}</span>
+        }
         <span className="hidden sm:inline">{user.name.split(' ')[0]}</span>
         <ChevronRight size={14} className={classNames('transition-transform duration-200', open && 'rotate-90')} />
       </button>
@@ -1229,7 +1232,7 @@ function UserAvatar({ user, onLogout }) {
             <button
               type="button"
               onClick={() => { setOpen(false); onLogout(); }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-red-50 hover:text-red-600"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-600"
             >
               <LogOut size={15} /> Sign out
             </button>
@@ -1240,27 +1243,13 @@ function UserAvatar({ user, onLogout }) {
   );
 }
 
-// ─── AuthModal — Sign In / Sign Up ────────────────────────────────────────────
+// ─── AuthModal — Google Sign-In ───────────────────────────────────────────────
 function AuthModal({ open, onClose, onSuccess }) {
-  const [tab, setTab] = useState('login');
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
-  const [errors, setErrors] = useState({});
-  const [globalError, setGlobalError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPw, setShowPw] = useState(false);
-  const [showCpw, setShowCpw] = useState(false);
+  const [error, setError] = useState('');
+  const btnRef = useRef(null);
 
-  // Reset form state when modal opens or tab changes
-  useEffect(() => {
-    setForm({ name: '', email: '', password: '', confirmPassword: '' });
-    setErrors({});
-    setGlobalError('');
-    setLoading(false);
-    setShowPw(false);
-    setShowCpw(false);
-  }, [open, tab]);
-
-  // Close on Escape key
+  // Close on Escape
   useEffect(() => {
     if (!open) return;
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -1268,50 +1257,57 @@ function AuthModal({ open, onClose, onSuccess }) {
     return () => window.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  function setField(field) {
-    return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
-  }
+  // Render the official Google button whenever the modal opens
+  useEffect(() => {
+    if (!open) return;
+    setError('');
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      setError('VITE_GOOGLE_CLIENT_ID is not set. Add it to your .env file.');
+      return;
+    }
+    // Poll until google.accounts is ready (loaded async)
+    let tries = 0;
+    const poll = setInterval(() => {
+      tries++;
+      if (window?.google?.accounts?.id) {
+        clearInterval(poll);
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleCredential,
+          auto_select: false,
+          cancel_on_tap_outside: false,
+        });
+        if (btnRef.current) {
+          window.google.accounts.id.renderButton(btnRef.current, {
+            theme: 'outline',
+            size: 'large',
+            width: btnRef.current.offsetWidth || 320,
+            text: 'continue_with',
+            shape: 'pill',
+          });
+        }
+      }
+      if (tries > 40) clearInterval(poll); // give up after 4s
+    }, 100);
+    return () => clearInterval(poll);
+  }, [open]);
 
-  // Password strength: 0-4
-  function getStrength(pw) {
-    if (!pw) return 0;
-    let s = 0;
-    if (pw.length >= 8) s++;
-    if (pw.length >= 12) s++;
-    if (/\d/.test(pw)) s++;
-    if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(pw)) s++;
-    return s;
-  }
-  const strength = getStrength(form.password);
-  const strengthLabel = ['', 'Weak', 'Fair', 'Strong', 'Very Strong'][strength];
-  const strengthColor = ['', 'bg-red-500', 'bg-red-500', 'bg-red-600', 'bg-red-700'][strength];
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setErrors({});
-    setGlobalError('');
+  async function handleCredential(response) {
     setLoading(true);
-    const isSignup = tab === 'signup';
-    const endpoint = isSignup ? '/api/auth/signup' : '/api/auth/login';
-    const body = isSignup
-      ? { name: form.name, email: form.email, password: form.password, confirmPassword: form.confirmPassword }
-      : { email: form.email, password: form.password };
+    setError('');
     try {
-      const res = await fetch(apiUrl(endpoint), {
+      const res = await fetch(apiUrl('/api/auth/google'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(body),
+        body: JSON.stringify({ credential: response.credential }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        if (data.errors) setErrors(data.errors);
-        setGlobalError(data.error || 'Something went wrong. Please try again.');
-        return;
-      }
+      if (!res.ok) throw new Error(data.error || 'Sign-in failed.');
       onSuccess(data.user);
-    } catch {
-      setGlobalError('Cannot reach the server. Make sure the API is running (npm run api).');
+    } catch (err) {
+      setError(err.message || 'Google sign-in failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -1327,191 +1323,64 @@ function AuthModal({ open, onClose, onSuccess }) {
           className="fixed inset-0 z-[100] flex items-center justify-center p-4"
           onClick={onClose}
         >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-red-950/20 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-blue-950/20 backdrop-blur-sm" />
 
-          {/* Modal card */}
           <motion.div
             initial={{ opacity: 0, y: 28, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 28, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="relative w-full max-w-md rounded-[2rem] border border-slate-200/80 bg-white/95 p-8 shadow-premium backdrop-blur-2xl"
+            className="relative w-full max-w-sm rounded-[2rem] border border-slate-200/80 bg-white p-8 shadow-premium"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close */}
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-5 top-5 grid h-9 w-9 place-items-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-100"
+              className="absolute right-5 top-5 grid h-9 w-9 place-items-center rounded-full border border-slate-200 text-slate-400 transition hover:bg-slate-100"
             >
               <X size={16} />
             </button>
 
             {/* Logo */}
-            <div className="mb-7 flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-red-600 text-white shadow-glow">
+            <div className="mb-6 flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-blue-600 text-white shadow-glow">
                 <Sparkles size={20} />
               </span>
               <span className="text-lg font-black tracking-tight text-slate-950">PDFFlow</span>
             </div>
 
-            {/* Tab switcher */}
-            <div className="mb-7 flex rounded-2xl border border-slate-200 bg-slate-50 p-1">
-              {['login', 'signup'].map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTab(t)}
-                  className={classNames(
-                    'flex-1 rounded-xl py-2.5 text-sm font-black transition',
-                    tab === t
-                      ? 'bg-white text-slate-950 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
-                  )}
-                >
-                  {t === 'login' ? 'Sign In' : 'Sign Up'}
-                </button>
-              ))}
-            </div>
-
-            <h2 className="text-2xl font-black text-slate-950">
-              {tab === 'login' ? 'Welcome back' : 'Create your account'}
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              {tab === 'login'
-                ? 'Enter your credentials to access your account.'
-                : 'Join PDFFlow and start converting documents for free.'}
+            <h2 className="text-2xl font-black text-slate-950">Welcome</h2>
+            <p className="mt-1 mb-7 text-sm text-slate-500">
+              Sign in with your Google account to get started. No password needed.
             </p>
 
-            {/* Global error banner */}
+            {/* Official Google Sign-In button rendered here */}
+            <div ref={btnRef} className="flex w-full justify-center" />
+
+            {/* Loading overlay */}
+            {loading && (
+              <div className="mt-5 flex items-center justify-center gap-2 text-sm font-semibold text-slate-500">
+                <Loader2 className="animate-spin" size={16} /> Signing you in…
+              </div>
+            )}
+
+            {/* Error */}
             <AnimatePresence>
-              {globalError && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+                  className="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-center text-sm font-semibold text-blue-700"
                 >
-                  {globalError}
-                </motion.div>
+                  {error}
+                </motion.p>
               )}
             </AnimatePresence>
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
-              {/* Full Name — signup only */}
-              {tab === 'signup' && (
-                <Field label="Full Name" error={errors.name}>
-                  <input
-                    type="text"
-                    placeholder="Jane Smith"
-                    value={form.name}
-                    onChange={setField('name')}
-                    autoComplete="name"
-                    className={inputClass(errors.name)}
-                  />
-                </Field>
-              )}
-
-              {/* Email */}
-              <Field label="Email" error={errors.email}>
-                <input
-                  type="email"
-                  placeholder="you@company.com"
-                  value={form.email}
-                  onChange={setField('email')}
-                  autoComplete="email"
-                  className={inputClass(errors.email)}
-                />
-              </Field>
-
-              {/* Password */}
-              <Field label="Password" error={errors.password}>
-                <div className="relative">
-                  <input
-                    type={showPw ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={form.password}
-                    onChange={setField('password')}
-                    autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
-                    className={classNames(inputClass(errors.password), 'pr-11')}
-                  />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    onClick={() => setShowPw((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
-                  >
-                    {showPw ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                </div>
-                {/* Strength meter — visible on signup */}
-                {tab === 'signup' && form.password && (
-                  <div className="mt-2">
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div
-                          key={i}
-                          className={classNames(
-                            'h-1 flex-1 rounded-full transition-colors duration-300',
-                            strength >= i ? strengthColor : 'bg-slate-200'
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">{strengthLabel}</p>
-                  </div>
-                )}
-              </Field>
-
-              {/* Confirm password — signup only */}
-              {tab === 'signup' && (
-                <Field label="Confirm Password" error={errors.confirmPassword}>
-                  <div className="relative">
-                    <input
-                      type={showCpw ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={form.confirmPassword}
-                      onChange={setField('confirmPassword')}
-                      autoComplete="new-password"
-                      className={classNames(inputClass(errors.confirmPassword), 'pr-11')}
-                    />
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      onClick={() => setShowCpw((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
-                    >
-                      {showCpw ? <EyeOff size={17} /> : <Eye size={17} />}
-                    </button>
-                  </div>
-                </Field>
-              )}
-
-              {/* Submit button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="mt-2 w-full rounded-2xl bg-red-600 py-4 font-black text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? (
-                  <span className="inline-flex items-center justify-center gap-2">
-                    <Loader2 className="animate-spin" size={18} /> Please wait…
-                  </span>
-                ) : tab === 'login' ? 'Sign In' : 'Create Account'}
-              </button>
-            </form>
-
-            {/* Tab switch link */}
-            <p className="mt-5 text-center text-sm text-slate-500">
-              {tab === 'login' ? "Don't have an account? " : 'Already have an account? '}
-              <button
-                type="button"
-                onClick={() => setTab(tab === 'login' ? 'signup' : 'login')}
-                className="font-bold text-red-600 hover:underline"
-              >
-                {tab === 'login' ? 'Sign up free' : 'Sign in'}
-              </button>
+            <p className="mt-6 text-center text-xs text-slate-400">
+              By continuing you agree to our Terms of Service.
             </p>
           </motion.div>
         </motion.div>
